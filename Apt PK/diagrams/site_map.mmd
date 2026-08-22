@@ -1,0 +1,57 @@
+%% =====================================================
+%% Site Map - PK's Luxury Apartments Management System
+%% Shows page hierarchy and role-based access
+%% =====================================================
+
+flowchart TB
+    Home["<b>Landing Page</b> (index.php)<br/>Public — Hero · About · Residences ·<br/>Amenities · Location · Booking form"]
+
+    subgraph AuthArea["Authentication"]
+        Login["Login (login.php)<br/>Public"]
+        Register["Register (register.php)<br/>Disabled"]
+    end
+
+    Dashboard["<b>Dashboard</b> (dashboard.php)<br/>All logged-in users · role-based stats"]
+
+    Home --> Login
+    Home --> Register
+    Login --> Dashboard
+    Register --> Login
+
+    subgraph TenantArea["Tenant & Shared Pages (requireLogin)"]
+        MyPayments["Payments (payments.php)<br/>Pay rent · receipts"]
+        MyUtilities["Utilities (utilities.php)<br/>Pay water / electricity"]
+        MyMaintenance["Maintenance (maintenance.php)<br/>Submit / track requests"]
+        Notifications["Notifications (notifications.php)<br/>Alerts & announcements"]
+        Profile["Profile (profile.php)<br/>Update details · change password"]
+        Receipt["Receipts (receipt.php · utility_receipt.php)<br/>Printable"]
+    end
+
+    subgraph AdminStaffArea["Admin & Staff Pages (requireRole admin/staff)"]
+        Rooms["Residences (rooms.php)<br/>CRUD · images · room types"]
+        Tenants["Tenants (tenants.php)<br/>Create · assign room · agreements"]
+        Bookings["Bookings (bookings.php)<br/>Approve / reject requests"]
+        MaintenanceAdmin["Maintenance (admin view)<br/>Assign · resolve"]
+        PaymentsAdmin["Payments (admin view)<br/>Record payments · bills"]
+        Reports["Reports (reports.php)<br/>Analytics & exports"]
+        Announcements["Announcements (announcements.php)<br/>Broadcast to tenants"]
+    end
+
+    subgraph AdminOnlyArea["Admin-Only (requireRole admin)"]
+        StaffMgt["Staff Management (staff.php)<br/>Create / manage staff accounts"]
+    end
+
+    Dashboard --> TenantArea
+    Dashboard --> AdminStaffArea
+    AdminStaffArea --> AdminOnlyArea
+
+    classDef pub fill:#DCE4F2,stroke:#1B2A4A,color:#101C38;
+    classDef auth fill:#FDEBD0,stroke:#C9A227,color:#5A3E00;
+    classDef shared fill:#E8F0E8,stroke:#2E7D32,color:#1B3A1B;
+    classDef staff fill:#F0EEE8,stroke:#1B2A4A,color:#101C38;
+    classDef admin fill:#E8E4F2,stroke:#5A4A8A,color:#2A1B4A;
+    class Home pub;
+    class Login,Register auth;
+    class MyPayments,MyUtilities,MyMaintenance,Notifications,Profile,Receipt shared;
+    class Rooms,Tenants,Bookings,MaintenanceAdmin,PaymentsAdmin,Reports,Announcements staff;
+    class StaffMgt admin;

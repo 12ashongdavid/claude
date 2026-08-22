@@ -1,0 +1,55 @@
+%% =====================================================
+%% System Design - PK's Luxury Apartments Management System
+%% =====================================================
+
+flowchart TB
+    subgraph Clients["Clients"]
+        Browser["Tenant / Staff / Admin Browser<br/>(Chrome, Edge, Mobile)"]
+    end
+
+    subgraph Server["XAMPP Server (Windows)"]
+        subgraph Apache["Apache (mod_rewrite)"]
+            direction TB
+            Pages["PHP Pages<br/>index · login · dashboard<br/>rooms · tenants · payments<br/>utilities · maintenance · reports"]
+            Api["REST API Endpoints<br/>/api/*.php<br/>(rooms, users, payments, utilities,<br/>maintenance, bookings, reports,<br/>agreements, announcements, paystack)"]
+            Webhook["paystack_webhook.php<br/>(payment callback)"]
+            Cron["cron/rent_reminders.php<br/>(scheduled)"]
+        end
+        Config["config/database.php<br/>helpers · CSRF · auth · rate-limit · SMS"]
+    end
+
+    subgraph Data["Data Layer"]
+        MySQL[("MySQL / MariaDB<br/>pk_ams database<br/>15 tables")]
+        Uploads[("uploads/ folder<br/>room & profile images,<br/>agreement documents")]
+    end
+
+    subgraph External["External Services"]
+        Paystack["Paystack API<br/>(test keys)<br/>payment initialization + verify"]
+        SMS["mNotify SMS API<br/>(rent reminders)"]
+        Maps["Google Maps embed<br/>(location)"]
+    end
+
+    Browser --> Apache
+    Apache --> Pages
+    Apache --> Api
+    Apache --> Webhook
+    Apache --> Cron
+    Pages --> Config
+    Api --> Config
+    Webhook --> Config
+    Cron --> Config
+    Config --> MySQL
+    Config --> Uploads
+    Api --> Paystack
+    Webhook --> Paystack
+    Cron --> SMS
+    Pages --> Maps
+
+    classDef client fill:#DCE4F2,stroke:#1B2A4A,color:#101C38;
+    classDef server fill:#F0EEE8,stroke:#C9A227,color:#101C38;
+    classDef data fill:#E8F0E8,stroke:#2E7D32,color:#1B3A1B;
+    classDef ext fill:#FDEBD0,stroke:#C9A227,color:#5A3E00;
+    class Browser client;
+    class Pages,Api,Webhook,Cron,Config server;
+    class MySQL,Uploads data;
+    class Paystack,SMS,Maps ext;
