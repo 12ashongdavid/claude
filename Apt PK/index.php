@@ -73,9 +73,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
             if ($payment_type !== 'none' && $payment_method === 'bank_transfer') {
-                $payment_status = 'pending_verification';
+                $payment_status = 'pending';
             } elseif ($payment_type !== 'none' && $payment_method === 'cash') {
-                $payment_status = 'pending_verification';
+                $payment_status = 'pending';
             }
 
             $stmt = $db->prepare("INSERT INTO booking_requests (full_name, email, phone, room_id, preferred_date, message, payment_type, payment_amount, payment_method, payment_reference, payment_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
@@ -323,7 +323,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <?php else: ?>
                         <i class='bx bx-home' style="font-size:3rem;"></i>
                     <?php endif; ?>
-                    <span class="room-showcase-badge"><?= ucfirst($r['room_type']) ?></span>
+                    <span class="room-showcase-badge"><?= sanitize(ucfirst($r['room_type'])) ?></span>
                     <span class="room-showcase-view"><i class='bx bx-expand'></i> View</span>
                 </div>
                 <div class="room-showcase-body">
@@ -535,7 +535,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <option value="">Any available room</option>
                         <?php foreach ($availableRooms as $r): ?>
                         <option value="<?= $r['id'] ?>" <?= (isset($_POST['room_id']) && $_POST['room_id'] == $r['id']) ? 'selected' : '' ?>>
-                            <?= sanitize($r['room_number']) ?> — <?= ucfirst($r['room_type']) ?> — GH&#8373; <?= number_format($r['rental_price'], 0) ?>/<?= ($r['charge_period'] ?? 'monthly') === 'daily' ? 'day' : 'mo' ?>
+                            <?= sanitize($r['room_number']) ?> — <?= sanitize(ucfirst($r['room_type'])) ?> — GH&#8373; <?= number_format($r['rental_price'], 0) ?>/<?= ($r['charge_period'] ?? 'monthly') === 'daily' ? 'day' : 'mo' ?>
                         </option>
                         <?php endforeach; ?>
                     </select>

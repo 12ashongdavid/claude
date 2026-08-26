@@ -75,7 +75,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // GET: List payments
-$tenant_filter = $_GET['tenant_id'] ?? '';
+if (!in_array($user['role'], ['admin', 'staff'])) {
+    $tenant_filter = $user['id'];
+} else {
+    $tenant_filter = $_GET['tenant_id'] ?? '';
+}
 $date_from = $_GET['date_from'] ?? '';
 $date_to = $_GET['date_to'] ?? '';
 $search = $_GET['search'] ?? '';

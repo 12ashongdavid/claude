@@ -49,9 +49,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
             if ($payment_type !== 'none' && $payment_method === 'bank_transfer') {
-                $payment_status = 'pending_verification';
+                $payment_status = 'pending';
             } elseif ($payment_type !== 'none' && $payment_method === 'cash') {
-                $payment_status = 'pending_verification';
+                $payment_status = 'pending';
             }
 
             $stmt = $db->prepare("INSERT INTO booking_requests (full_name, email, phone, room_id, preferred_date, message, payment_type, payment_amount, payment_method, payment_reference, payment_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");

@@ -34,7 +34,7 @@ include __DIR__ . '/includes/header.php';
         </div>
         <div class="modal-body">
             <form id="confirmPaymentForm" onsubmit="submitConfirmPayment(event)">
-                <input type="hidden" name="booking_id" id="confirmPaymentBookingId">
+                <input type="hidden" name="id" id="confirmPaymentBookingId">
                 <div class="form-group">
                     <label>Reference Number</label>
                     <input type="text" name="payment_reference" class="form-control" placeholder="e.g. Bank slip number or ADMIN-XXXX">
@@ -68,9 +68,9 @@ function renderBookings(bookings) {
     }
 
     const statusColors = { pending: 'warning', approved: 'success', rejected: 'danger' };
-    const paymentStatusColors = { pending: 'warning', completed: 'success', failed: 'danger', pending_verification: 'info', '': 'secondary' };
+    const paymentStatusColors = { pending: 'warning', completed: 'success', failed: 'danger', '': 'secondary' };
     const paymentLabels = { none: 'No Deposit', down_payment: '50% Deposit', full_payment: 'Full Amount' };
-    const paymentStatusLabels = { pending: 'Pending', completed: 'Paid', failed: 'Failed', pending_verification: 'Awaiting Verification', '': 'N/A' };
+    const paymentStatusLabels = { pending: 'Pending', completed: 'Paid', failed: 'Failed', '': 'N/A' };
 
     container.innerHTML = bookings.map(b => {
         const hasPayment = b.payment_type && b.payment_type !== 'none';

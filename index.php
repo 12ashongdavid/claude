@@ -355,7 +355,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <?php else: ?>
                         <i class='bx bx-home' style="font-size:3rem;"></i>
                     <?php endif; ?>
-                    <span class="room-showcase-badge"><?= ucfirst($r['room_type']) ?></span>
+                    <span class="room-showcase-badge"><?= sanitize(ucfirst($r['room_type'])) ?></span>
                     <span class="room-showcase-view"><i class='bx bx-expand'></i> View</span>
                 </div>
                 <div class="room-showcase-body">
@@ -575,7 +575,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <option value="">Any available room</option>
                         <?php foreach ($availableRooms as $r): ?>
                         <option value="<?= $r['id'] ?>" <?= (isset($_POST['room_id']) && $_POST['room_id'] == $r['id']) ? 'selected' : '' ?>>
-                            <?= sanitize($r['room_number']) ?> — <?= ucfirst($r['room_type']) ?> — GH&#8373; <?= number_format($r['rental_price'], 0) ?>/<?= ($r['charge_period'] ?? 'monthly') === 'daily' ? 'day' : 'mo' ?>
+                            <?= sanitize($r['room_number']) ?> — <?= sanitize(ucfirst($r['room_type'])) ?> — GH&#8373; <?= number_format($r['rental_price'], 0) ?>/<?= ($r['charge_period'] ?? 'monthly') === 'daily' ? 'day' : 'mo' ?>
                         </option>
                         <?php endforeach; ?>
                     </select>

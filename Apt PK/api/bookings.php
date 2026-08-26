@@ -61,9 +61,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($payment_type !== 'none' && !empty($payment_reference)) {
             $payment_status = 'completed';
         } elseif ($payment_type !== 'none' && $payment_method === 'bank_transfer') {
-            $payment_status = 'pending_verification';
+            $payment_status = 'pending';
         } elseif ($payment_type !== 'none' && $payment_method === 'cash') {
-            $payment_status = 'pending_verification';
+            $payment_status = 'pending';
         }
 
         $stmt = $db->prepare("INSERT INTO booking_requests (full_name, email, phone, room_id, preferred_date, message, payment_type, payment_amount, payment_method, payment_reference, payment_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
@@ -200,7 +200,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         $id = intval($_POST['id'] ?? 0);
-        $reference = trim($_POST['payment_reference'] ?? 'ADMIN-' . strtoupper(bin2hex(random_bytes(4))));
+        $refInput = trim($_POST['payment_reference'] ?? '');
+        $reference = $refInput !== '' ? $refInput : 'ADMIN-' . strtoupper(bin2hex(random_bytes(4)));
 
         $stmt = $db->prepare("UPDATE booking_requests SET payment_status = 'completed', payment_reference = ? WHERE id = ?");
         $stmt->execute([$reference, $id]);

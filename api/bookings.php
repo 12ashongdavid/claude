@@ -269,7 +269,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $id = intval($_POST['id'] ?? 0);
         $code = trim($_POST['verification_code'] ?? '');
-        $reference = trim($_POST['payment_reference'] ?? 'ADMIN-' . strtoupper(bin2hex(random_bytes(4))));
+        $refInput = trim($_POST['payment_reference'] ?? '');
+        $reference = $refInput !== '' ? $refInput : 'ADMIN-' . strtoupper(bin2hex(random_bytes(4)));
 
         if (empty($code)) {
             jsonOut(['error' => 'Please enter the verification code from the booker.']);
