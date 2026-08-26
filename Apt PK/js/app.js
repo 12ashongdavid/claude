@@ -237,7 +237,7 @@ function showToast(message, type = 'info') {
 
     toast.innerHTML = `
         <span style="font-size:1.2rem;">${icons[type] || icons.info}</span>
-        <span class="toast-msg">${message}</span>
+        <span class="toast-msg">${esc(message)}</span>
         <button class="toast-close" onclick="this.parentElement.remove()">&times;</button>
     `;
 

@@ -54,7 +54,7 @@ foreach ($tenancies as $t) {
 
     // The covered period expires on the LAST day of the covered month
     $expiry = date('Y-m-t', strtotime($covered . '-01'));
-    $windowStart = date('Y-m-d', strtotime('-1 month', strtotime($expiry)));
+    $windowStart = $covered . '-01';
 
     if ($today < $windowStart) {
         continue; // too early — reminder starts one month before expiry

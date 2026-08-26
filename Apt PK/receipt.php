@@ -33,7 +33,7 @@ if ($user['role'] === 'tenant' && $payment['tenant_id'] != $user['id']) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Payment Receipt — <?= $payment['reference_number'] ?></title>
+    <title>Payment Receipt — <?= sanitize($payment['reference_number']) ?></title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', Arial, sans-serif; color: #1A1A1A; background: #f5f5f5; }
@@ -146,7 +146,7 @@ if ($user['role'] === 'tenant' && $payment['tenant_id'] != $user['id']) {
         </div>
         <div class="receipt-row" style="border-bottom-color:#D4D6E5;">
             <span class="label">Room Number</span>
-            <span class="value"><?= sanitize($payment['room_number']) ?> (<?= ucfirst($payment['room_type']) ?>)</span>
+            <span class="value"><?= sanitize($payment['room_number']) ?> (<?= sanitize(ucfirst($payment['room_type'])) ?>)</span>
         </div>
         <div class="receipt-row" style="border-bottom:none;">
             <span class="label">Month Covered</span>

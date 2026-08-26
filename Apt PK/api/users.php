@@ -78,7 +78,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 echo json_encode(['error' => $uploadError]);
                 exit;
             }
-            $ext = pathinfo($_FILES['profile_picture']['name'], PATHINFO_EXTENSION);
+            $finfo = new finfo(FILEINFO_MIME_TYPE);
+            $ext = safeUploadExtension($finfo->file($_FILES['profile_picture']['tmp_name']));
             $filename = 'user_' . $user['id'] . '_' . time() . '.' . $ext;
             $dest = UPLOAD_PATH . 'profiles/' . $filename;
             if (move_uploaded_file($_FILES['profile_picture']['tmp_name'], $dest)) {
@@ -287,6 +288,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // GET: List users/tenants
+if (!in_array($user['role'], ['admin', 'staff'])) {
+    http_response_code(403);
+    echo json_encode(['error' => 'Forbidden']);
+    exit;
+}
 $role = $_GET['role'] ?? '';
 $search = $_GET['search'] ?? '';
 

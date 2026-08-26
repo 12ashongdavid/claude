@@ -89,7 +89,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // GET: List utility bills
-$tenant_filter = $_GET['tenant_id'] ?? '';
+if (!in_array($user['role'], ['admin', 'staff'])) {
+    $tenant_filter = $user['id'];
+} else {
+    $tenant_filter = $_GET['tenant_id'] ?? '';
+}
 $month = $_GET['billing_month'] ?? '';
 $status = $_GET['status'] ?? '';
 

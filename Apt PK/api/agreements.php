@@ -30,8 +30,9 @@ if (($_GET['action'] ?? '') === 'view') {
         exit('File missing.');
     }
     $disposition = ($_GET['download'] ?? '') === '1' ? 'attachment' : 'inline';
+    $safeName = str_replace(['"', '\\'], '', $agreement['original_name']);
     header('Content-Type: ' . $agreement['file_type']);
-    header('Content-Disposition: ' . $disposition . '; filename="' . $agreement['original_name'] . '"');
+    header('Content-Disposition: ' . $disposition . '; filename="' . $safeName . '"');
     header('Content-Length: ' . filesize($path));
     readfile($path);
     exit;
@@ -80,7 +81,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         $orig = basename($_FILES['agreement_file']['name']);
-        $ext = strtolower(pathinfo($orig, PATHINFO_EXTENSION));
+        $finfo = new finfo(FILEINFO_MIME_TYPE);
+        $ext = safeUploadExtension($finfo->file($_FILES['agreement_file']['tmp_name']));
         $stored = 'agr_' . $tenant_id . '_' . time() . '_' . bin2hex(random_bytes(4)) . '.' . $ext;
         $dir = UPLOAD_PATH . 'agreements/';
         if (!is_dir($dir)) {

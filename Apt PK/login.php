@@ -4,6 +4,7 @@
 // PK's Luxury Apartments — Apartment Management System
 // =====================================================
 require_once __DIR__ . '/config/database.php';
+sendSecurityHeaders();
 
 if (isLoggedIn()) {
     header('Location: dashboard.php');

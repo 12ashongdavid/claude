@@ -41,21 +41,23 @@ foreach ($inactiveUsers as $u) {
         $upd->execute([$u['id']]);
 
         // End any active tenancy
-        $tenancy = $db->prepare("UPDATE tenancies SET status = 'ended', end_date = CURDATE() WHERE tenant_id = ? AND status = 'active'");
+        $roomIds = $db->prepare("SELECT room_id FROM tenancies WHERE tenant_id = ? AND status = 'active'");
+        $roomIds->execute([$u['id']]);
+        $freedRooms = $roomIds->fetchAll(PDO::FETCH_COLUMN);
+
+        $tenancy = $db->prepare("UPDATE tenancies SET status = 'terminated', end_date = CURDATE() WHERE tenant_id = ? AND status = 'active'");
         $tenancy->execute([$u['id']]);
 
         // Free up their room(s)
-        $tenanted = $db->prepare("
-            UPDATE rooms r
-            JOIN tenancies t ON t.room_id = r.id
-            SET r.status = 'available'
-            WHERE t.tenant_id = ? AND t.status = 'ended'
-        ");
-        $tenanted->execute([$u['id']]);
+        if ($freedRooms) {
+            $placeholders = implode(',', array_fill(0, count($freedRooms), '?'));
+            $tenanted = $db->prepare("UPDATE rooms SET status = 'available' WHERE id IN ($placeholders) AND status = 'occupied'");
+            $tenanted->execute($freedRooms);
+        }
 
         // Log notification
         $logMsg = $u['last_login']
-            ? "Account deactivated: no login since " . date('M j, Y', strtotime($u['last_login'])) . " (>{inactiveDays} days)."
+            ? "Account deactivated: no login since " . date('M j, Y', strtotime($u['last_login'])) . " (>{$inactiveDays} days)."
             : "Account deactivated: never logged in. Account created " . date('M j, Y', strtotime($u['created_at'])) . " (>{$inactiveDays} days ago).";
 
         // Notify admin
