@@ -320,7 +320,8 @@ function validateEmail($email) {
     if (preg_match('/\.\./', $local) || preg_match('/\.\./', $domain)) {
         return false;
     }
-    $tld = end(explode('.', $domain));
+    $domainParts = explode('.', $domain);
+    $tld = end($domainParts);
     if (strlen($tld) < 2 || strlen($tld) > 10) {
         return false;
     }
