@@ -287,6 +287,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // GET: List users/tenants
+if (!in_array($user['role'], ['admin', 'staff'])) {
+    http_response_code(403);
+    echo json_encode(['error' => 'Forbidden']);
+    exit;
+}
 $role = $_GET['role'] ?? '';
 $search = $_GET['search'] ?? '';
 

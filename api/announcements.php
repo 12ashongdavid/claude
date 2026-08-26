@@ -95,9 +95,15 @@ $sql = "SELECT a.*, u.full_name AS author, t.full_name AS target_name
         FROM announcements a
         JOIN users u ON a.created_by = u.id
         LEFT JOIN users t ON a.target_tenant_id = t.id
-        ORDER BY a.created_at DESC";
+        WHERE 1=1";
+$params = [];
+if ($user['role'] === 'tenant') {
+    $sql .= " AND (a.target_tenant_id IS NULL OR a.target_tenant_id = ?)";
+    $params[] = $user['id'];
+}
+$sql .= " ORDER BY a.created_at DESC";
 $stmt = $db->prepare($sql);
-$stmt->execute();
+$stmt->execute($params);
 $announcements = $stmt->fetchAll();
 
 echo json_encode($announcements);

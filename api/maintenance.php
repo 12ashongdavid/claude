@@ -111,14 +111,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // GET: List maintenance requests
-$mine = isset($_GET['mine']) && $_GET['mine'] === '1';
 $status_filter = $_GET['status'] ?? '';
 $priority = $_GET['priority'] ?? '';
 
 $sql = "SELECT mr.*, u.full_name as tenant_name, r.room_number FROM maintenance_requests mr JOIN users u ON mr.tenant_id = u.id JOIN rooms r ON mr.room_id = r.id WHERE 1=1";
 $params = [];
 
-if ($mine && $user['role'] === 'tenant') {
+if ($user['role'] === 'tenant') {
     $sql .= " AND mr.tenant_id = ?";
     $params[] = $user['id'];
 }

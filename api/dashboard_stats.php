@@ -13,7 +13,7 @@ $db = getDB();
 
 $revenueThisMonth = $db->query("
     SELECT
-        (SELECT COALESCE(SUM(amount),0) FROM rent_payments WHERE MONTH(payment_date)=MONTH(CURRENT_DATE()) AND YEAR(payment_date)=YEAR(CURRENT_DATE()))
+        (SELECT COALESCE(SUM(amount),0) FROM rent_payments WHERE status='completed' AND MONTH(payment_date)=MONTH(CURRENT_DATE()) AND YEAR(payment_date)=YEAR(CURRENT_DATE()))
         + (SELECT COALESCE(SUM(amount),0) FROM utility_bills WHERE status='paid' AND payment_date IS NOT NULL AND MONTH(payment_date)=MONTH(CURRENT_DATE()) AND YEAR(payment_date)=YEAR(CURRENT_DATE()))
 ")->fetchColumn();
 
@@ -29,6 +29,7 @@ $recentPayments = $db->query("
         FROM rent_payments rp
         JOIN users u ON rp.tenant_id = u.id
         JOIN rooms r ON rp.room_id = r.id
+        WHERE rp.status = 'completed'
         UNION ALL
         SELECT ub.payment_date, ub.amount, ub.payment_method,
                u.full_name, r.room_number, CONCAT('Utility (', UCASE(ub.bill_type), ')'), ub.created_at

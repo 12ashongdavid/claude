@@ -30,8 +30,9 @@ if (($_GET['action'] ?? '') === 'view') {
         exit('File missing.');
     }
     $disposition = ($_GET['download'] ?? '') === '1' ? 'attachment' : 'inline';
+    $safeName = str_replace(['"', '\\'], '', $agreement['original_name']);
     header('Content-Type: ' . $agreement['file_type']);
-    header('Content-Disposition: ' . $disposition . '; filename="' . $agreement['original_name'] . '"');
+    header('Content-Disposition: ' . $disposition . '; filename="' . $safeName . '"');
     header('Content-Length: ' . filesize($path));
     readfile($path);
     exit;
