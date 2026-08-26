@@ -231,7 +231,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     data-price="<?= $r['rental_price'] ?>"
                                     data-period="<?= ($r['charge_period'] ?? 'monthly') === 'daily' ? 'day' : 'month' ?>"
                                     <?= (isset($_POST['room_id']) && $_POST['room_id'] == $r['id']) ? 'selected' : '' ?>>
-                                    <?= sanitize($r['room_number']) ?> — <?= ucfirst($r['room_type']) ?> — GH&#8373; <?= number_format($r['rental_price'], 0) ?>/<?= ($r['charge_period'] ?? 'monthly') === 'daily' ? 'day' : 'mo' ?>
+                                    <?= sanitize($r['room_number']) ?> — <?= sanitize(ucfirst($r['room_type'])) ?> — GH&#8373; <?= number_format($r['rental_price'], 0) ?>/<?= ($r['charge_period'] ?? 'monthly') === 'daily' ? 'day' : 'mo' ?>
                                 </option>
                                 <?php endforeach; ?>
                             </select>

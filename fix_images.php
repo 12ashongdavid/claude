@@ -4,6 +4,7 @@
 // Run once in the browser, then DELETE this file.
 // =====================================================
 require_once __DIR__ . '/config/database.php';
+requireRole(['admin']);
 $db = getDB();
 
 $fixed = 0;

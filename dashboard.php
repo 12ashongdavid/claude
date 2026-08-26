@@ -179,7 +179,7 @@ include __DIR__ . '/includes/header.php';
                     <td style="font-weight:600;"><?= sanitize($tr['full_name']) ?></td>
                     <td><?= sanitize($tr['phone']) ?></td>
                     <td><span class="badge badge-success"><?= sanitize($tr['room_number']) ?></span> <span style="font-size:0.72rem;color:var(--text-muted);">ID: <?= (int)$tr['room_id'] ?></span></td>
-                    <td><?= ucfirst($tr['room_type']) ?></td>
+                    <td><?= sanitize(ucfirst($tr['room_type'])) ?></td>
                     <td><?= ($tr['charge_period'] ?? 'monthly') === 'daily' ? 'Daily' : 'Monthly' ?></td>
                     <td style="font-size:0.8rem;"><?= date('M j, Y', strtotime($tr['start_date'])) ?> — <?= $tr['end_date'] ? date('M j, Y', strtotime($tr['end_date'])) : 'Ongoing' ?></td>
                     <td><?= $tr['current_month_paid'] > 0 ? '<span class="badge badge-success">Paid</span>' : '<span class="badge badge-danger">Unpaid</span>' ?></td>
@@ -344,7 +344,7 @@ include __DIR__ . '/includes/header.php';
     </div>
     <div class="grid-2">
         <div>
-            <p style="margin-bottom:6px;"><strong>Type:</strong> <?= ucfirst($myRoom['room_type']) ?> <span class="badge badge-info" style="font-size:0.72rem;vertical-align:middle;"><?= ($myRoom['charge_period'] ?? 'monthly') === 'daily' ? 'Daily Rate' : 'Monthly Rate' ?></span></p>
+            <p style="margin-bottom:6px;"><strong>Type:</strong> <?= sanitize(ucfirst($myRoom['room_type'])) ?> <span class="badge badge-info" style="font-size:0.72rem;vertical-align:middle;"><?= ($myRoom['charge_period'] ?? 'monthly') === 'daily' ? 'Daily Rate' : 'Monthly Rate' ?></span></p>
             <p style="margin-bottom:6px;"><strong>Floor:</strong> <?= $myRoom['floor'] ?></p>
             <p><strong>Amenities:</strong> <?= sanitize($myRoom['amenities']) ?></p>
         </div>
