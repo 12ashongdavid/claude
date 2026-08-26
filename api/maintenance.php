@@ -25,9 +25,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $description = trim($_POST['description'] ?? '');
         $priority = $_POST['priority'] ?? 'medium';
 
+        $allowedCategories = ['plumbing', 'electrical', 'structural', 'pest_control', 'appliance', 'other'];
+        $allowedPriorities = ['low', 'medium', 'high', 'urgent'];
+        if (!in_array($category, $allowedCategories, true)) {
+            $category = 'other';
+        }
+        if (!in_array($priority, $allowedPriorities, true)) {
+            $priority = 'medium';
+        }
+
         if (!$room_id || empty($subject) || empty($description)) {
             echo json_encode(['error' => 'Please fill in all required fields.']);
             exit;
+        }
+
+        if ($user['role'] === 'tenant') {
+            $stmt = $db->prepare("SELECT 1 FROM tenancies WHERE tenant_id = ? AND room_id = ? AND status = 'active'");
+            $stmt->execute([$user['id'], $room_id]);
+            if (!$stmt->fetch()) {
+                echo json_encode(['error' => 'You may only submit requests for your own room.']);
+                exit;
+            }
         }
 
         $stmt = $db->prepare("INSERT INTO maintenance_requests (tenant_id, room_id, category, subject, description, priority) VALUES (?, ?, ?, ?, ?, ?)");
