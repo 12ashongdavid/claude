@@ -149,7 +149,7 @@ if ($user) {
                     </div>
                 </div>
                 <div class="topbar-user" onclick="location.href='profile.php'">
-                    <img src="<?= SITE_URL ?>/uploads/profiles/<?= $user['profile_picture'] ?>" alt="Profile" loading="lazy" onerror="this.src='https://ui-avatars.com/api/?name=<?= urlencode($user['full_name']) ?>&background=47433E&color=fff'">
+                    <img src="<?= SITE_URL ?>/uploads/profiles/<?= sanitize($user['profile_picture']) ?>" alt="Profile" loading="lazy" onerror="this.src='https://ui-avatars.com/api/?name=<?= urlencode($user['full_name']) ?>&background=47433E&color=fff'">
                     <span><?= sanitize($user['full_name']) ?></span>
                 </div>
             </div>

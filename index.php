@@ -3,6 +3,7 @@
 // LANDING PAGE — PK's Luxury Apartments
 // =====================================================
 require_once __DIR__ . '/config/database.php';
+sendSecurityHeaders();
 $db = getDB();
 
 $availableRooms = $db->query("SELECT r.*, rt.charge_period FROM rooms r LEFT JOIN room_types rt ON rt.name = r.room_type WHERE r.status = 'available' ORDER BY r.rental_price ASC")->fetchAll();
@@ -180,6 +181,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </script>
 </head>
 <body style="background:#fff;">
+
+<?php if ($success): ?>
+<div class="alert alert-success" style="margin:16px 24px;"><?= sanitize($success) ?></div>
+<?php elseif ($error): ?>
+<div class="alert alert-error" style="margin:16px 24px;"><?= sanitize($error) ?></div>
+<?php endif; ?>
 
 <!-- ============ TOP NAVIGATION ============ -->
 <nav class="booking-nav" id="bookingNav">

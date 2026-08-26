@@ -29,7 +29,7 @@ include __DIR__ . '/includes/header.php';
 
 <div class="profile-header">
     <div class="profile-pic-wrapper">
-        <img src="<?= SITE_URL ?>/uploads/profiles/<?= $user['profile_picture'] ?>" alt="Profile" id="profilePicPreview" onerror="this.src='https://ui-avatars.com/api/?name=<?= urlencode($user['full_name']) ?>&background=47433E&color=fff&size=100'">
+        <img src="<?= SITE_URL ?>/uploads/profiles/<?= sanitize($user['profile_picture']) ?>" alt="Profile" id="profilePicPreview" onerror="this.src='https://ui-avatars.com/api/?name=<?= urlencode($user['full_name']) ?>&background=47433E&color=fff&size=100'">
     </div>
     <div>
         <h3 style="font-size:1.2rem;color:#fff;"><?= sanitize($user['full_name']) ?></h3>
