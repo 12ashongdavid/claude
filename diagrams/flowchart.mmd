@@ -1,0 +1,139 @@
+%% =====================================================
+%% Business Process Flowchart — PK's Luxury Apartments AMS
+%% Shows the five core workflows that run through the system.
+%%
+%% Render at https://mermaid.live or via the command in README.md.
+%% =====================================================
+
+flowchart TB
+
+    %% ── 1. Tenant Onboarding ─────────────────────────────
+    subgraph Onboarding["1 — Tenant Onboarding"]
+        direction TB
+        O1[Visitor browses<br/>residences on landing page]
+        O2[Visitor submits<br/>booking request]
+        O3{Staff / Admin<br/>reviews booking}
+        O4[Booking approved]
+        O5[Booking rejected —<br/>notify visitor]
+        O6[Admin / Staff<br/>registers tenant<br/>+ assigns room]
+        O7[System creates tenancy<br/>marks room occupied]
+        O8[System sends welcome SMS<br/>with temp password via mNotify]
+        O9[Tenant logs in<br/>changes password]
+        O10[Tenant dashboard<br/>ready]
+
+        O1 --> O2
+        O2 --> O3
+        O3 -->|Approved| O4
+        O3 -->|Rejected| O5
+        O4 --> O6
+        O6 --> O7
+        O7 --> O8
+        O8 --> O9
+        O9 --> O10
+    end
+
+    %% ── 2. Rent Payment ──────────────────────────────────
+    subgraph RentPayment["2 — Rent Payment"]
+        direction TB
+        R1[Tenant / Staff<br/>opens payments page]
+        R2{Payment<br/>method?}
+
+        subgraph Online["Online — Paystack"]
+            direction TB
+            R3[Tenant initiates<br/>Paystack payment]
+            R4[Redirected to<br/>Paystack checkout]
+            R5[Paystack processes<br/>card / bank / USSD / mobile]
+            R6{Payment<br/>successful?}
+            R7[Webhook fires →<br/>system verifies signature]
+            R8[System records payment<br/>+ creates notification]
+            R9[Tenant redirected<br/>to dashboard]
+
+            R3 --> R4 --> R5 --> R6
+            R6 -->|Yes| R7 --> R8 --> R9
+        end
+
+        subgraph Manual["Manual — Staff / Admin"]
+            direction TB
+            R10[Staff selects tenant<br/>+ enters amount]
+            R11[System validates:<br/>month not already paid]
+            R12[System records payment<br/>marks room occupied]
+            R13[Receipt generated<br/>+ confirmation SMS]
+
+            R10 --> R11 --> R12 --> R13
+        end
+
+        R1 --> R2
+        R2 -->|Online| R3
+        R2 -->|Cash / MoMo / Bank| R10
+    end
+
+    %% ── 3. Utility Bill Payment ───────────────────────────
+    subgraph UtilityBill["3 — Utility Bill Payment"]
+        direction TB
+        U1[Staff records utility bill<br/>water or electricity]
+        U2[Tenant sees unpaid bill<br/>on utilities page]
+        U3{Payment<br/>method?}
+
+        U4[Tenant pays online<br/>via Paystack]
+        U5[Staff records<br/>manual payment]
+        U6[System marks bill paid<br/>+ generates receipt]
+
+        U1 --> U2 --> U3
+        U3 -->|Online| U4 --> U6
+        U3 -->|Cash / MoMo| U5 --> U6
+    end
+
+    %% ── 4. Maintenance ───────────────────────────────────
+    subgraph Maintenance["4 — Maintenance Request"]
+        direction TB
+        M1[Tenant submits request<br/>category + description]
+        M2[Staff / Admin views<br/>new request]
+        M3[Assigned to<br/>technician + notified]
+        M4[Technician performs<br/>repair / fix]
+        M5{Resolved?}
+        M6[Status → resolved<br/>+ tenant notified]
+        M7[Reassign or<br/>escalate priority]
+        M8[Tenant closes<br/>request]
+
+        M1 --> M2 --> M3 --> M4 --> M5
+        M5 -->|Yes| M6 --> M8
+        M5 -->|No| M7 --> M4
+    end
+
+    %% ── 5. Automated Rent Reminders ──────────────────────
+    subgraph Reminders["5 — Automated Rent Reminders"]
+        direction TB
+        CRON[Cron job runs<br/>weekly — XAMPP scheduler]
+        SCAN[System scans all<br/>active tenants]
+        CHECK{Rent due<br/>within 7 days?}
+        SKIP[Skip —<br/>not yet due]
+        LOG[Log reminder to<br/>prevent duplicates]
+        SMS_NOTIFY[Send SMS via mNotify<br/>+ in-app notification]
+        TRACK[Mark reminder<br/>sent for this week]
+
+        CRON --> SCAN --> CHECK
+        CHECK -->|No| SKIP
+        CHECK -->|Yes| LOG --> SMS_NOTIFY --> TRACK
+    end
+
+    %% ── Cross-flow connections ────────────────────────────
+    O10 -.-> R1
+    O10 -.-> U1
+    O10 -.-> M1
+    R8 -.->|receipt available| U6
+    CRON -.->|runs on<br/>same server| R1
+
+    %% ── Styling ──────────────────────────────────────────
+    classDef start fill:#E8F0E8,stroke:#2E7D32,stroke-width:2px,color:#1B3A1B
+    classDef process fill:#DCE4F2,stroke:#4A6FA5,color:#1B2A4A
+    classDef decision fill:#FDEBD0,stroke:#C9A227,color:#5A3E00
+    classDef end fill:#E8E4F2,stroke:#5A4A8A,color:#2A1B4A
+    classDef external fill:#F0F0F0,stroke:#666666,color:#333333
+    classDef sms fill:#F5F0E0,stroke:#8B7355,color:#3A2E1A
+
+    class O1,R1,U1,M1,CRON start
+    class O2,O4,O6,O7,O8,O9,R3,R10,R12,R13,U2,U4,U5,U6,M1,M2,M3,M4,M6,SCAN,LOG,SMS_NOTIFY,TRACK process
+    class O3,R2,R6,U3,M5,CHECK decision
+    class O5,O10,R9 end
+    class R4,R5,R7,R8,R11,U4,U5,M7,M8,SKIP external
+    class R7,R8 sms

@@ -1,0 +1,193 @@
+erDiagram
+    %% =====================================================
+    %% ERD - PK's Luxury Apartments Management System
+    %% Tables derived from setup.sql + migrations
+    %% =====================================================
+
+    USERS {
+        INT id PK
+        VARCHAR username UK
+        VARCHAR password
+        VARCHAR full_name
+        VARCHAR email
+        VARCHAR phone
+        ENUM role
+        VARCHAR profile_picture
+        DATE date_of_birth
+        TINYINT must_change_password
+        TINYINT is_active
+        TIMESTAMP created_at
+        TIMESTAMP updated_at
+    }
+
+    ROOMS {
+        INT id PK
+        VARCHAR room_number UK
+        VARCHAR room_type
+        INT floor
+        DECIMAL size_sqm
+        DECIMAL rental_price
+        ENUM status
+        VARCHAR image
+        TEXT description
+        TEXT amenities
+        TIMESTAMP created_at
+    }
+
+    ROOM_TYPES {
+        INT id PK
+        VARCHAR name UK
+        ENUM charge_period
+        TIMESTAMP created_at
+    }
+
+    TENANCIES {
+        INT id PK
+        INT tenant_id FK
+        INT room_id FK
+        DATE start_date
+        DATE end_date
+        DECIMAL monthly_rent
+        DECIMAL security_deposit
+        ENUM status
+        TIMESTAMP created_at
+    }
+
+    RENT_PAYMENTS {
+        INT id PK
+        INT tenant_id FK
+        INT room_id FK
+        DECIMAL amount
+        DATE payment_date
+        ENUM payment_method
+        VARCHAR reference_number
+        VARCHAR month_covered
+        ENUM status
+        INT received_by FK
+        TEXT notes
+        TIMESTAMP created_at
+    }
+
+    UTILITY_BILLS {
+        INT id PK
+        INT tenant_id FK
+        INT room_id FK
+        ENUM bill_type
+        DECIMAL amount
+        VARCHAR billing_month
+        DATE payment_date
+        ENUM payment_method
+        ENUM status
+        TIMESTAMP created_at
+    }
+
+    MAINTENANCE_REQUESTS {
+        INT id PK
+        INT tenant_id FK
+        INT room_id FK
+        ENUM category
+        VARCHAR subject
+        TEXT description
+        ENUM priority
+        ENUM status
+        INT assigned_to FK
+        VARCHAR assigned_name
+        VARCHAR assigned_phone
+        TEXT resolution_notes
+        DATETIME resolved_date
+        TIMESTAMP created_at
+        TIMESTAMP updated_at
+    }
+
+    NOTIFICATIONS {
+        INT id PK
+        INT user_id FK
+        VARCHAR title
+        TEXT message
+        ENUM type
+        TINYINT is_read
+        VARCHAR link
+        TIMESTAMP created_at
+    }
+
+    ROOM_IMAGES {
+        INT id PK
+        INT room_id FK
+        VARCHAR image
+        TIMESTAMP created_at
+    }
+
+    BOOKING_REQUESTS {
+        INT id PK
+        VARCHAR full_name
+        VARCHAR email
+        VARCHAR phone
+        INT room_id FK
+        DATE preferred_date
+        TEXT message
+        ENUM status
+        TIMESTAMP created_at
+    }
+
+    TENANT_AGREEMENTS {
+        INT id PK
+        INT tenant_id FK
+        VARCHAR original_name
+        VARCHAR stored_name
+        INT file_size
+        VARCHAR file_type
+        INT uploaded_by FK
+        VARCHAR notes
+        TIMESTAMP created_at
+    }
+
+    ANNOUNCEMENTS {
+        INT id PK
+        VARCHAR title
+        TEXT content
+        INT target_tenant_id FK
+        INT created_by FK
+        TINYINT is_active
+        TIMESTAMP created_at
+    }
+
+    PAYSTACK_TRANSACTIONS {
+        INT id PK
+        VARCHAR reference UK
+        VARCHAR pay_type
+        INT tenant_id FK
+        DECIMAL amount
+        INT bill_id
+        VARCHAR month_covered
+        TIMESTAMP recorded_at
+    }
+
+    RENT_REMINDER_LOG {
+        INT id PK
+        INT tenant_id FK
+        VARCHAR month_covered
+        TINYINT week_no
+        DATETIME sent_at
+    }
+
+    %% ---- Relationships ----
+    USERS ||--o{ TENANCIES : "tenant"
+    ROOMS ||--o{ TENANCIES : "housing"
+    USERS ||--o{ RENT_PAYMENTS : "pays (tenant_id)"
+    ROOMS ||--o{ RENT_PAYMENTS : "billed for"
+    USERS ||--o{ RENT_PAYMENTS : "records (received_by)"
+    USERS ||--o{ UTILITY_BILLS : "pays (tenant_id)"
+    ROOMS ||--o{ UTILITY_BILLS : "billed for"
+    USERS ||--o{ MAINTENANCE_REQUESTS : "submits"
+    ROOMS ||--o{ MAINTENANCE_REQUESTS : "reported on"
+    USERS ||--o{ MAINTENANCE_REQUESTS : "assigned to"
+    USERS ||--o{ NOTIFICATIONS : "receives"
+    ROOMS ||--o{ ROOM_IMAGES : "has"
+    ROOMS ||--o{ BOOKING_REQUESTS : "requested for"
+    USERS ||--o{ TENANT_AGREEMENTS : "signed by (tenant_id)"
+    USERS ||--o{ TENANT_AGREEMENTS : "uploaded by"
+    USERS ||--o{ ANNOUNCEMENTS : "targets"
+    USERS ||--o{ ANNOUNCEMENTS : "created by"
+    USERS ||--o{ PAYSTACK_TRANSACTIONS : "initiates"
+    USERS ||--o{ RENT_REMINDER_LOG : "reminded"
+    ROOM_TYPES ||--o{ ROOMS : "classifies"

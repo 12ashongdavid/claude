@@ -1,0 +1,162 @@
+%% =====================================================
+%% Use Case Diagram — PK's Luxury Apartments AMS
+%% Standard UML format: actors outside, use cases inside
+%% system boundary, grouped by functional module.
+%%
+%% Render at https://mermaid.live or via the command in README.md.
+%% =====================================================
+
+flowchart LR
+
+    %% ── Actors ──────────────────────────────────────────
+    Visitor((Visitor<br/>Prospective Tenant))
+    Tenant((Tenant))
+    Staff((Staff))
+    Admin((Admin))
+    Cron((System<br/>Cron Job))
+    Gateway((Paystack<br/>Gateway))
+    SMS((mNotify<br/>SMS API))
+
+    %% ── System Boundary ─────────────────────────────────
+    subgraph AMS["PK's Luxury Apartments AMS"]
+        direction TB
+
+        subgraph PublicModule["Public Module"]
+            UC1[Browse Residences<br/>& Amenities]
+            UC2[Submit Booking<br/>Request]
+        end
+
+        subgraph AuthModule["Authentication Module"]
+            UC3[Login]
+            UC4[Manage Profile /<br/>Change Password]
+        end
+
+        subgraph TenantModule["Tenant Self-Service"]
+            UC5[Pay Rent<br/>Online — Paystack]
+            UC6[Pay Utility Bills<br/>Online — Paystack]
+            UC7[Submit Maintenance<br/>Request]
+            UC8[Track Maintenance<br/>Status]
+            UC9[View Notifications<br/>& Announcements]
+            UC10[Download Rent<br/>Receipt]
+            UC11[Download Utility<br/>Receipt]
+        end
+
+        subgraph RoomMgt["Room & Residence Management"]
+            UC12[Manage Residences<br/>CRUD + Images]
+            UC13[Manage Room<br/>Types & Pricing]
+        end
+
+        subgraph TenantMgt["Tenant & Tenancy Management"]
+            UC14[Register Tenants<br/>& Assign Rooms]
+            UC15[Manage Tenancy<br/>Agreements]
+            UC16[Deactivate /<br/>Activate Tenants]
+        end
+
+        subgraph BookingMgt["Booking Management"]
+            UC17[Approve / Reject<br/>Booking Requests]
+        end
+
+        subgraph FinMgt["Financial Management"]
+            UC18[Record Manual<br/>Rent Payments]
+            UC19[Record Manual<br/>Utility Bills]
+            UC20[Generate Reports<br/>& Analytics]
+        end
+
+        subgraph MaintMgt["Maintenance Management"]
+            UC21[Assign Maintenance<br/>to Technician]
+            UC22[Resolve & Close<br/>Maintenance Request]
+        end
+
+        subgraph CommModule["Communication Module"]
+            UC23[Post Announcements<br/>& Target Tenants]
+            UC24[Send Rent Reminder<br/>SMS + In-App]
+        end
+
+        subgraph AdminModule["Administration Module"]
+            UC25[Manage Staff<br/>Accounts]
+            UC26[Reset User<br/>Passwords]
+        end
+
+        subgraph SysIntegration["System Integration"]
+            UC27[Process Paystack<br/>Webhook / Verify]
+            UC28[Send SMS<br/>via mNotify API]
+        end
+    end
+
+    %% ── Actor → Use-Case Associations ───────────────────
+    Visitor --> UC1
+    Visitor --> UC2
+
+    Tenant --> UC3
+    Tenant --> UC4
+    Tenant --> UC5
+    Tenant --> UC6
+    Tenant --> UC7
+    Tenant --> UC8
+    Tenant --> UC9
+    Tenant --> UC10
+    Tenant --> UC11
+
+    Staff --> UC3
+    Staff --> UC4
+    Staff --> UC12
+    Staff --> UC13
+    Staff --> UC14
+    Staff --> UC15
+    Staff --> UC16
+    Staff --> UC17
+    Staff --> UC18
+    Staff --> UC19
+    Staff --> UC20
+    Staff --> UC21
+    Staff --> UC22
+    Staff --> UC23
+
+    Admin --> UC25
+    Admin --> UC26
+
+    Cron --> UC24
+    Gateway --> UC27
+    SMS --> UC28
+
+    %% ── <<include>> — mandatory sub-behaviour ───────────
+    UC5 -.->|<<include>>| UC27
+    UC6 -.->|<<include>>| UC27
+    UC14 -.->|<<include>>| UC28
+    UC24 -.->|<<include>>| UC28
+
+    %% ── <<extend>> — optional / conditional behaviour ───
+    UC23 -.->|<<extend>>| UC9
+    UC20 -.->|<<extend>>| UC10
+
+    %% ── Actor Generalisation (Admin inherits Staff) ─────
+    Admin -.->|inherits all<br/>Staff capabilities| Staff
+
+    %% ── Styling ─────────────────────────────────────────
+    classDef actor fill:#F5F0E0,stroke:#8B7355,stroke-width:2px,color:#3A2E1A
+    classDef system fill:#FFFFFF,stroke:#1B2A4A,stroke-width:2px,color:#101C38
+    classDef pub fill:#DCE4F2,stroke:#4A6FA5,color:#1B2A4A
+    classDef auth fill:#FDEBD0,stroke:#C9A227,color:#5A3E00
+    classDef tenant fill:#E8F0E8,stroke:#2E7D32,color:#1B3A1B
+    classDef room fill:#E8E4F2,stroke:#5A4A8A,color:#2A1B4A
+    classDef tenantMgt fill:#F0E8E8,stroke:#8A4A4A,color:#4A1B1B
+    classDef booking fill:#E8F0F0,stroke:#2A7A7A,color:#1B3A3A
+    classDef fin fill:#F5F0D0,stroke:#8B8A2A,color:#3A3A0A
+    classDef maint fill:#F0E8F0,stroke:#7A4A7A,color:#3A1B3A
+    classDef comm fill:#DCE4F2,stroke:#4A6FA5,color:#1B2A4A
+    classDef admin fill:#E8E4F2,stroke:#5A4A8A,color:#2A1B4A
+    classDef sys fill:#F0F0F0,stroke:#666666,color:#333333
+
+    class Visitor,Tenant,Staff,Admin,Cron,Gateway,SMS actor
+    class AMS system
+    class UC1,UC2 pub
+    class UC3,UC4 auth
+    class UC5,UC6,UC7,UC8,UC9,UC10,UC11 tenant
+    class UC12,UC13 room
+    class UC14,UC15,UC16 tenantMgt
+    class UC17 booking
+    class UC18,UC19,UC20 fin
+    class UC21,UC22 maint
+    class UC23,UC24 comm
+    class UC25,UC26 admin
+    class UC27,UC28 sys
