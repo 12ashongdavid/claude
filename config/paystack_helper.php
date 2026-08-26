@@ -173,6 +173,9 @@ function paystackRecordPayment($reference) {
         if (!$booking) {
             return ['status' => 'failed', 'message' => 'Booking request not found.'];
         }
+        if ($booking['payment_status'] === 'completed') {
+            return ['status' => 'duplicate', 'kind' => 'booking'];
+        }
 
         $stmt = $db->prepare("UPDATE booking_requests SET payment_status = 'completed', payment_reference = ? WHERE id = ?");
         $stmt->execute([$reference, $bookingId]);

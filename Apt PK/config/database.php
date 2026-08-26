@@ -188,11 +188,18 @@ function requireLogin() {
         header('Location: login.php');
         exit;
     }
+    $u = currentUser();
+    if (!$u) {
+        // Session refers to an account that no longer exists or was deactivated
+        unset($_SESSION['user_id'], $_SESSION['user_role']);
+        setFlash('error', 'Your account is no longer active. Please contact management.');
+        header('Location: login.php');
+        exit;
+    }
     // Force temporary-password users to set a new password first (page views only, not API calls)
     $isApi = strpos($_SERVER['SCRIPT_NAME'] ?? '', '/api/') !== false;
     if (!$isApi && basename($_SERVER['PHP_SELF']) !== 'profile.php') {
-        $u = currentUser();
-        if ($u && (int)$u['must_change_password'] === 1) {
+        if ((int)$u['must_change_password'] === 1) {
             setFlash('warning', 'You are using a temporary password. Please change it now.');
             header('Location: profile.php');
             exit;
@@ -441,6 +448,24 @@ function validateAgreementUpload($file, $maxSize = 10485760) {
         return 'Invalid file type. Allowed: PDF, DOC, DOCX, or image (JPEG/PNG/GIF/WebP).';
     }
     return null;
+}
+
+// Map a validated upload MIME type to a fixed, safe file extension.
+// Never derive the saved extension from the client-supplied filename —
+// it's attacker-controlled and, combined with a content/MIME-matching
+// polyglot file, can turn an "image upload" into a way to drop a file
+// with an executable extension.
+function safeUploadExtension($mime) {
+    $map = [
+        'image/jpeg' => 'jpg',
+        'image/png' => 'png',
+        'image/gif' => 'gif',
+        'image/webp' => 'webp',
+        'application/pdf' => 'pdf',
+        'application/msword' => 'doc',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document' => 'docx',
+    ];
+    return $map[$mime] ?? 'bin';
 }
 
 // Send SMS via mNotify (best-effort, never blocks the request)
