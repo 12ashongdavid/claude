@@ -584,10 +584,21 @@ function sendSMS($phone, $message, $sender = MNOTIFY_SENDER_ID) {
         return false;
     }
 
+    // mNotify concatenates long messages into multiple segments and
+    // reassembles them on the recipient's phone, so 160 chars (one GSM-7
+    // segment) is not a hard limit — several of our own messages (account
+    // creation with credentials, the booking verification code) routinely
+    // run past it. Cap generously instead of truncating real content.
+    $maxLen = 918;
+    $sendable = mb_substr($message, 0, $maxLen);
+    if (mb_strlen($message) > $maxLen) {
+        $sendable = mb_substr($sendable, 0, $maxLen - 3) . '...';
+    }
+
     $payload = json_encode([
         'recipient' => [$phone],
         'sender' => $sender,
-        'message' => mb_substr($message, 0, 160),
+        'message' => $sendable,
         'is_schedule' => false,
         'schedule_date' => '',
     ]);

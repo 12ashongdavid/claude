@@ -48,11 +48,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             $tenants = $db->query("SELECT id, full_name, phone FROM users WHERE role = 'tenant' AND is_active = 1")->fetchAll();
         }
+        $notifExcerpt = mb_substr($content, 0, 200) . (mb_strlen($content) > 200 ? '...' : '');
+        $smsExcerpt = mb_substr($content, 0, 140) . (mb_strlen($content) > 140 ? '...' : '');
         foreach ($tenants as $tenant) {
             $stmt = $db->prepare("INSERT INTO notifications (user_id, title, message, type, link) VALUES (?, 'Announcement', ?, 'announcement', 'announcements.php')");
-            $stmt->execute([$tenant['id'], "$title: " . mb_substr($content, 0, 200)]);
+            $stmt->execute([$tenant['id'], "$title: $notifExcerpt"]);
             if (!empty($tenant['phone'])) {
-                sendSMS($tenant['phone'], "ANNOUNCEMENT from PK's Luxury Apartments: $title. " . mb_substr($content, 0, 140));
+                sendSMS($tenant['phone'], "ANNOUNCEMENT from PK's Luxury Apartments: $title. $smsExcerpt");
             }
         }
 

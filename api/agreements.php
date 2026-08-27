@@ -102,7 +102,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt = $db->prepare("INSERT INTO notifications (user_id, title, message, type, link) VALUES (?, 'Tenancy Agreement Uploaded', ?, 'info', 'dashboard.php')");
         $stmt->execute([$tenant_id, 'A tenancy agreement document has been uploaded to your dashboard.']);
         if (!empty($tenant['phone'])) {
-            sendSMS($tenant['phone'], "Dear " . $tenant['full_name'] . ", your tenancy agreement has been uploaded to your dashboard at PK's Luxury Apartments.");
+            sendSMS($tenant['phone'], "Dear " . $tenant['full_name'] . ", your tenancy agreement has been uploaded to your dashboard at PK's Luxury Apartments. Log in to view or download it.");
         }
 
         echo json_encode(['success' => true, 'id' => $agreement_id]);
