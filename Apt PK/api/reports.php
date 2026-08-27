@@ -1,8 +1,5 @@
 <?php
-// =====================================================
-// API: Reports (date-range revenue + transaction list)
-// PK's Luxury Apartments — Apartment Management System
-// =====================================================
+// Builds the revenue report for a date range — combined rent + utility totals plus the underlying transaction list.
 require_once __DIR__ . '/../config/database.php';
 requireRole(['admin', 'staff']);
 

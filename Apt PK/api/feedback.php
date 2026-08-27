@@ -1,8 +1,5 @@
 <?php
-// =====================================================
-// API: Feedback Reports (tenant + public submissions, admin management)
-// PK's Luxury Apartments — Apartment Management System
-// =====================================================
+// Handles feedback/complaint reports from tenants and the public, plus admin replies and status tracking.
 require_once __DIR__ . '/../config/database.php';
 
 header('Content-Type: application/json');

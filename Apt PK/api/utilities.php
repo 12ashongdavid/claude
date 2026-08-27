@@ -1,7 +1,5 @@
 <?php
-// =====================================================
-// API: Utility Bills CRUD
-// =====================================================
+// Handles utility bills — creating them for a tenant and marking them paid.
 require_once __DIR__ . '/../config/database.php';
 requireLogin();
 

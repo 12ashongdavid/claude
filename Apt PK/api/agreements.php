@@ -1,8 +1,5 @@
 <?php
-// =====================================================
-// API: Tenant Agreements — upload / list / view / delete
-// PK's Luxury Apartments — Apartment Management System
-// =====================================================
+// Lets admins/staff upload and manage tenant agreement documents, and lets tenants view or download their own.
 require_once __DIR__ . '/../config/database.php';
 requireLogin();
 

@@ -1,7 +1,5 @@
 <?php
-// =====================================================
-// API: Bookings (Prospective Tenants) — with payment support
-// =====================================================
+// Handles booking requests from prospective tenants, including the optional deposit or full payment.
 require_once __DIR__ . '/../config/database.php';
 
 header('Content-Type: application/json');

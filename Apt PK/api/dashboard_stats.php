@@ -1,10 +1,5 @@
 <?php
-// =====================================================
-// API: Admin/Staff dashboard live stats
-// PK's Luxury Apartments — Apartment Management System
-// Polled by the dashboard so finance figures update
-// automatically when a tenant pays (e.g. via Paystack).
-// =====================================================
+// Live numbers for the admin/staff dashboard — polled so revenue and other figures update as soon as a tenant pays (e.g. via Paystack).
 require_once __DIR__ . '/../config/database.php';
 requireRole(['admin', 'staff']);
 

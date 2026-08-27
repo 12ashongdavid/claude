@@ -1,7 +1,5 @@
 <?php
-// =====================================================
-// API: Users (Tenants list, Profile update)
-// =====================================================
+// Handles user accounts — profile updates, plus admin/staff management of tenants and staff.
 require_once __DIR__ . '/../config/database.php';
 requireLogin();
 

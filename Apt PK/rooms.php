@@ -1,8 +1,5 @@
 <?php
-// =====================================================
-// Rooms Management Page (with image uploads)
-// PK's Luxury Apartments — Apartment Management System
-// =====================================================
+// Lets admin/staff add, edit, and delete residences and their photos, and manage residence types.
 require_once __DIR__ . '/config/database.php';
 $pageTitle = 'Residence';
 requireRole(['admin', 'staff']);

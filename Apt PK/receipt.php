@@ -1,8 +1,5 @@
 <?php
-// =====================================================
-// PDF Receipt Generation
-// PK's Luxury Apartments — Apartment Management System
-// =====================================================
+// Renders a printable receipt for a single rent payment.
 require_once __DIR__ . '/config/database.php';
 requireLogin();
 

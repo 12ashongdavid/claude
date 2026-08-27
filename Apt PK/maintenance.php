@@ -1,8 +1,5 @@
 <?php
-// =====================================================
-// Maintenance Requests Page
-// PK's Luxury Apartments — Apartment Management System
-// =====================================================
+// Maintenance requests — tenants submit issues here, admin/staff track and update their status.
 require_once __DIR__ . '/config/database.php';
 $pageTitle = 'Maintenance Requests';
 requireLogin();

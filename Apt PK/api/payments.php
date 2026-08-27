@@ -1,7 +1,5 @@
 <?php
-// =====================================================
-// API: Payments CRUD
-// =====================================================
+// Records rent payments taken in person and lists payment history.
 require_once __DIR__ . '/../config/database.php';
 requireLogin();
 

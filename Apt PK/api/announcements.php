@@ -1,8 +1,5 @@
 <?php
-// =====================================================
-// API: Announcements
-// PK's Luxury Apartments — Apartment Management System
-// =====================================================
+// Handles announcements — admins/staff post them (site-wide or to one tenant), tenants see the ones meant for them.
 require_once __DIR__ . '/../config/database.php';
 requireLogin();
 
