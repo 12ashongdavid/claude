@@ -63,18 +63,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt->execute([$userId, $reporterName, $reporterEmail, $reporterPhone, $category, $subject, $message]);
 
         // Notify all active admins in one query
-        $admins = $db->query("SELECT id FROM users WHERE role = 'admin' AND is_active = 1")->fetchAll(PDO::FETCH_COLUMN);
+        $admins = $db->query("SELECT id, phone FROM users WHERE role = 'admin' AND is_active = 1")->fetchAll();
         if ($admins) {
             $placeholders = implode(',', array_fill(0, count($admins), '(?, ?, ?, ?)'));
             $notifSql = "INSERT INTO notifications (user_id, title, message, type) VALUES $placeholders";
             $notifParams = [];
-            foreach ($admins as $adminId) {
-                $notifParams[] = $adminId;
+            foreach ($admins as $admin) {
+                $notifParams[] = $admin['id'];
                 $notifParams[] = 'New Feedback Report';
                 $notifParams[] = "$reporterName submitted a $category report: $subject";
                 $notifParams[] = 'info';
             }
             $db->prepare($notifSql)->execute($notifParams);
+
+            foreach ($admins as $admin) {
+                sendSMS($admin['phone'], "New $category report from $reporterName: $subject");
+            }
         }
 
         echo json_encode(['success' => true, 'message' => 'Your report has been submitted. We will review it shortly.']);

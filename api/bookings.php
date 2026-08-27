@@ -295,6 +295,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt = $db->prepare("UPDATE booking_requests SET payment_status = 'completed', payment_reference = ? WHERE id = ?");
         $stmt->execute([$reference, $id]);
 
+        $stmt = $db->prepare("SELECT full_name, phone FROM booking_requests WHERE id = ?");
+        $stmt->execute([$id]);
+        $req = $stmt->fetch();
+        if ($req) {
+            sendSMS($req['phone'], "Dear " . $req['full_name'] . ", your booking payment has been confirmed. Thank you for choosing PK's Luxury Apartments.");
+        }
+
         jsonOut(['success' => true]);
         exit;
     }
@@ -310,6 +317,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $id = intval($_POST['id'] ?? 0);
         $stmt = $db->prepare("UPDATE booking_requests SET payment_status = 'failed' WHERE id = ?");
         $stmt->execute([$id]);
+
+        $stmt = $db->prepare("SELECT full_name, phone FROM booking_requests WHERE id = ?");
+        $stmt->execute([$id]);
+        $req = $stmt->fetch();
+        if ($req) {
+            sendSMS($req['phone'], "Dear " . $req['full_name'] . ", we could not confirm your booking payment. Please contact PK's Luxury Apartments for assistance.");
+        }
 
         jsonOut(['success' => true]);
         exit;

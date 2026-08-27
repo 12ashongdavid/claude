@@ -282,6 +282,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         $stmt = $db->prepare("UPDATE users SET is_active = ? WHERE id = ?");
         $stmt->execute([$action === 'deactivate_user' ? 0 : 1, $id]);
+
+        if ($action === 'deactivate_user' && $targetRole === 'tenant') {
+            // End any active tenancy and free up their residence
+            $roomIds = $db->prepare("SELECT room_id FROM tenancies WHERE tenant_id = ? AND status = 'active'");
+            $roomIds->execute([$id]);
+            $freedRooms = $roomIds->fetchAll(PDO::FETCH_COLUMN);
+
+            $db->prepare("UPDATE tenancies SET status = 'terminated', end_date = CURDATE() WHERE tenant_id = ? AND status = 'active'")->execute([$id]);
+
+            if ($freedRooms) {
+                $placeholders = implode(',', array_fill(0, count($freedRooms), '?'));
+                $db->prepare("UPDATE rooms SET status = 'available' WHERE id IN ($placeholders) AND status = 'occupied'")->execute($freedRooms);
+            }
+
+            $stmt = $db->prepare("SELECT full_name, phone FROM users WHERE id = ?");
+            $stmt->execute([$id]);
+            $target = $stmt->fetch();
+            if ($target) {
+                $db->prepare("INSERT INTO notifications (user_id, title, message, type) VALUES (?, 'Account Deactivated', 'Your account has been deactivated. Please contact management for details.', 'warning')")->execute([$id]);
+                sendSMS($target['phone'], "Dear " . $target['full_name'] . ", your PK's Luxury Apartments account has been deactivated. Please contact management for details.");
+            }
+        } elseif ($action === 'activate_user') {
+            $stmt = $db->prepare("SELECT full_name, phone FROM users WHERE id = ?");
+            $stmt->execute([$id]);
+            $target = $stmt->fetch();
+            if ($target) {
+                $db->prepare("INSERT INTO notifications (user_id, title, message, type) VALUES (?, 'Account Reactivated', 'Your account has been reactivated. You may now log in.', 'success')")->execute([$id]);
+                sendSMS($target['phone'], "Dear " . $target['full_name'] . ", your PK's Luxury Apartments account has been reactivated. You may now log in.");
+            }
+        }
+
         echo json_encode(['success' => true]);
         exit;
     }

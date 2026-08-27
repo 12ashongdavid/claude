@@ -29,7 +29,7 @@ if ($role === 'admin' || $role === 'staff') {
     $tenantRooms = $db->query("SELECT u.id, u.full_name, u.phone, r.id AS room_id, r.room_number, r.room_type, t.start_date, t.end_date,
         rt.charge_period,
         (SELECT COALESCE(SUM(rp.amount),0) FROM rent_payments rp WHERE rp.tenant_id = u.id) AS total_paid,
-        (SELECT COALESCE(SUM(rp.amount),0) FROM rent_payments rp WHERE rp.tenant_id = u.id AND MONTH(rp.month_covered)=MONTH(CURRENT_DATE()) AND YEAR(rp.month_covered)=YEAR(CURRENT_DATE())) AS current_month_paid
+        (SELECT COALESCE(SUM(rp.amount),0) FROM rent_payments rp WHERE rp.tenant_id = u.id AND rp.status = 'completed' AND rp.month_covered = DATE_FORMAT(CURRENT_DATE(), '%Y-%m')) AS current_month_paid
         FROM users u
         JOIN tenancies t ON t.tenant_id = u.id AND t.status = 'active'
         JOIN rooms r ON t.room_id = r.id

@@ -53,12 +53,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt = $db->prepare("INSERT INTO utility_bills (tenant_id, room_id, bill_type, amount, billing_month) VALUES (?, ?, ?, ?, ?)");
         $stmt->execute([$tenant_id, $room_id, $bill_type, $amount, $billing_month]);
 
-        // Notify tenant by SMS
+        // Notify tenant in-app and by SMS
         $stmt = $db->prepare("SELECT full_name, phone FROM users WHERE id = ?");
         $stmt->execute([$tenant_id]);
         $tenant = $stmt->fetch();
         if ($tenant) {
             $month_label = date('F Y', strtotime($billing_month . '-01'));
+            $stmt = $db->prepare("INSERT INTO notifications (user_id, title, message, type, link) VALUES (?, 'Utility Bill Due', ?, 'utility', 'utilities.php')");
+            $stmt->execute([$tenant_id, "Your " . ucfirst($bill_type) . " bill of " . formatCurrency($amount) . " for $month_label is now due."]);
             sendSMS($tenant['phone'], "Dear " . $tenant['full_name'] . ", your " . ucfirst($bill_type) . " bill of GH₵ " . number_format($amount, 2) . " for $month_label is now due. Please pay at the office. Thank you.");
         }
 
@@ -74,12 +76,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt = $db->prepare("UPDATE utility_bills SET status='paid', payment_date=?, payment_method=? WHERE id=?");
         $stmt->execute([$payment_date, $payment_method, $id]);
 
-        // Notify tenant by SMS
+        // Notify tenant in-app and by SMS
         $stmt = $db->prepare("SELECT ub.tenant_id, ub.bill_type, ub.amount, ub.billing_month, u.full_name, u.phone FROM utility_bills ub JOIN users u ON ub.tenant_id = u.id WHERE ub.id = ?");
         $stmt->execute([$id]);
         $bill = $stmt->fetch();
         if ($bill) {
             $month_label = date('F Y', strtotime($bill['billing_month'] . '-01'));
+            $stmt = $db->prepare("INSERT INTO notifications (user_id, title, message, type, link) VALUES (?, 'Utility Bill Paid', ?, 'utility', 'utilities.php')");
+            $stmt->execute([$bill['tenant_id'], "Your " . ucfirst($bill['bill_type']) . " bill of " . formatCurrency($bill['amount']) . " for $month_label has been marked as paid."]);
             sendSMS($bill['phone'], "Dear " . $bill['full_name'] . ", your " . ucfirst($bill['bill_type']) . " bill of GH₵ " . number_format($bill['amount'], 2) . " for $month_label has been marked as paid. Thank you!");
         }
 
