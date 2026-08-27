@@ -467,13 +467,13 @@ function getTenantNextDueMonth($tenantId) {
 // Returns e.g. "Aug 2026 — Oct 2026" or just "Aug 2026" for a single month.
 function getTenantPaidThroughRange($tenantId) {
     $db = getDB();
-    $stmt = $db->prepare("SELECT MIN(month_covered), MAX(month_covered) FROM rent_payments WHERE tenant_id = ? AND status = 'completed'");
+    $stmt = $db->prepare("SELECT MIN(month_covered) AS min_month, MAX(month_covered) AS max_month FROM rent_payments WHERE tenant_id = ? AND status = 'completed'");
     $stmt->execute([$tenantId]);
     $row = $stmt->fetch();
-    if (!$row || empty($row[0])) return null;
-    $from = date('M Y', strtotime($row[0] . '-01'));
-    $to = date('M Y', strtotime($row[1] . '-01'));
-    return $from === $to ? $from : "$from — $to";
+    if (!$row || empty($row['min_month'])) return null;
+    $from = date('M Y', strtotime($row['min_month'] . '-01'));
+    $to = date('M Y', strtotime($row['max_month'] . '-01'));
+    return $from === $to ? $from : "$from to $to";
 }
 
 // CSRF token generation

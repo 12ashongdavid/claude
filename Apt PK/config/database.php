@@ -394,7 +394,7 @@ function getTenantPaidThroughRange($tenantId) {
     if (!$row || !$row['first_month']) return null;
     $from = date('M Y', strtotime($row['first_month'] . '-01'));
     $to = date('M Y', strtotime($row['last_month'] . '-01'));
-    return $from === $to ? $from : "$from — $to";
+    return $from === $to ? $from : "$from to $to";
 }
 
 // CSRF token generation

@@ -1,0 +1,7 @@
+# Many shared hosts (this app targets cPanel/FastCGI hosting) strip the
+# Authorization header before PHP ever sees it. This forwards it through
+# as HTTP_AUTHORIZATION so bearerTokenFromRequest() in
+# config/mobile_auth.php can read it.
+RewriteEngine On
+RewriteCond %{HTTP:Authorization} ^(.*)
+RewriteRule .* - [E=HTTP_AUTHORIZATION:%1]
