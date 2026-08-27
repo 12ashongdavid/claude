@@ -545,6 +545,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </div>
 </div>
 
+<!-- Booking Success Modal -->
+<div id="bookingSuccessModal" class="modal-overlay" onclick="if(event.target===this)closeBookingSuccessModal()">
+    <div style="background:#1B2A4A;border-radius:var(--radius-lg);box-shadow:var(--shadow-lg);max-width:460px;width:92%;padding:44px 32px 36px;text-align:center;position:relative;margin:20px;border:1px solid rgba(255,255,255,0.1);">
+        <button onclick="closeBookingSuccessModal()" style="position:absolute;top:12px;right:16px;background:none;border:none;font-size:1.5rem;cursor:pointer;color:rgba(255,255,255,0.5);line-height:1;" aria-label="Close">&times;</button>
+        <div style="width:76px;height:76px;border-radius:50%;background:rgba(76,175,80,0.15);display:flex;align-items:center;justify-content:center;margin:0 auto 18px;border:2px solid rgba(76,175,80,0.4);">
+            <i class="bx bx-check-circle" style="font-size:2.6rem;color:#4CAF50;"></i>
+        </div>
+        <h3 style="font-size:1.25rem;margin-bottom:10px;color:#FFFFFF;font-weight:700;">Booking Request Submitted</h3>
+        <p id="bookingSuccessMessage" style="color:rgba(255,255,255,0.7);font-size:0.9rem;line-height:1.6;margin-bottom:28px;">We've received your request and will contact you soon.</p>
+        <button onclick="closeBookingSuccessModal()" style="background:linear-gradient(135deg,#4CAF50,#388E3C);color:#fff;border:none;padding:12px 32px;border-radius:var(--radius-sm);font-size:0.95rem;font-weight:600;cursor:pointer;min-width:160px;transition:opacity 0.2s;" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">OK, Got It</button>
+    </div>
+</div>
+
 <!-- ============ BOOKING MODAL ============ -->
 <div id="bookingModal" class="modal-overlay" onclick="if(event.target===this)closeBookingModal()">
     <div class="booking-form-card" style="max-width:680px;width:95%;max-height:92vh;overflow-y:auto;position:relative;margin:20px;background:#1B2A4A;border-radius:var(--radius-lg);box-shadow:var(--shadow-lg);border:1px solid rgba(255,255,255,0.12);">
@@ -613,10 +626,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <span><strong>Note:</strong> Balance must be paid within 1 week of move-in.</span>
             </div>
             <button type="submit" class="btn btn-primary btn-block btn-lg">Submit Booking Request</button>
-            <div id="bookingModalSuccess" style="display:none;margin-top:16px;padding:16px;background:rgba(76,175,80,0.12);border:1px solid rgba(76,175,80,0.4);border-radius:var(--radius);text-align:center;">
-                <i class='bx bx-check-circle' style="font-size:1.6rem;color:#4CAF50;display:block;margin-bottom:6px;"></i>
-                <span style="color:#fff;font-size:0.92rem;"></span>
-            </div>
         </form>
     </div>
 </div>
@@ -855,6 +864,10 @@ function closeBookingModal() {
     modal.classList.remove('active');
     document.body.style.overflow = 'auto';
 }
+function closeBookingSuccessModal() {
+    document.getElementById('bookingSuccessModal').classList.remove('active');
+    document.body.style.overflow = '';
+}
 document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeBookingModal(); });
 
 // ============ BOOKING MODAL AJAX ============
@@ -886,22 +899,15 @@ async function submitBookingModal(e) {
                 window.location.href = data.authorization_url;
                 return;
             }
+            e.target.reset();
             if (data.paystack_error) {
-                showToast('Booking saved. ' + data.paystack_error, 'error');
-                e.target.reset();
+                closeBookingModal();
+                alert('Booking saved. ' + data.paystack_error);
                 return;
             }
-            const suc = document.getElementById('bookingModalSuccess');
-            if (suc) {
-                suc.querySelector('span').textContent = data.message || 'Your booking request has been submitted! We will contact you within 24 hours.';
-                suc.style.display = 'block';
-            }
-            e.target.reset();
-            showToast('Booking request submitted!', 'success');
-            if (suc) {
-                suc.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                setTimeout(() => { suc.style.display = 'none'; }, 8000);
-            }
+            closeBookingModal();
+            document.getElementById('bookingSuccessModal').classList.add('active');
+            document.body.style.overflow = 'hidden';
         } else {
             alert(data.error || 'Error submitting booking. Please try again.');
         }
