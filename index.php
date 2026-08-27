@@ -168,7 +168,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PK's Luxury Apartments — Premium Living in Haatso, Accra</title>
+    <title>PK's Luxury Apartments | Premium Living in Haatso, Accra</title>
     <meta name="description" content="Experience premium apartment living at PK's Luxury Apartments in Haatso, Accra. Modern residences, excellent amenities, and affordable prices.">
     <link rel="preconnect" href="https://unpkg.com" crossorigin>
     <link rel="stylesheet" href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css">
@@ -254,8 +254,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <div class="section-tag">About Us</div>
                 </div>
                 <h3>A Place You'll Be Proud to Call Home</h3>
-                <p>PK's Luxury Apartments sits in the heart of Haatso, Accra, one of the city's liveliest neighborhoods. Our homes are built for young professionals, families, and students alike — wherever you are in life, we've got a space that fits.</p>
-                <p>We care about doing the basics right — quality, security, and making sure our tenants are genuinely happy here. It's why so many people choose to call PK's home.</p>
+                <p>PK's Luxury Apartments sits in the heart of Haatso, Accra, one of the city's liveliest neighborhoods. Our homes are built for young professionals, families, and students alike. Wherever you are in life, we've got a space that fits.</p>
+                <p>We care about doing the basics right: quality, security, and making sure our tenants are genuinely happy here. It's why so many people choose to call PK's home.</p>
                 <div class="about-features">
                     <div class="about-feature">
                         <span class="check"><i class='bx bx-check'></i></span> Secure environment
@@ -411,7 +411,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
             <div class="testimonial-card">
                 <div class="testimonial-text">
-                    I picked this place mainly because I can walk to the market and catch a trotro without stress. Turned out to be a good move — my friends pay more for a lot less space.
+                    I picked this place mainly because I can walk to the market and catch a trotro without stress. Turned out to be a good move too, since my friends pay more for a lot less space.
                 </div>
                 <div class="testimonial-author">
                     <div class="testimonial-avatar">KB</div>
@@ -541,7 +541,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <i class="bx bx-check-circle" style="font-size:2.6rem;color:#4CAF50;"></i>
         </div>
         <h3 style="font-size:1.25rem;margin-bottom:10px;color:#FFFFFF;font-weight:700;">Report Submitted Successfully</h3>
-        <p id="reportSuccessMessage" style="color:rgba(255,255,255,0.7);font-size:0.9rem;line-height:1.6;margin-bottom:28px;">Thanks — we've got your report and will get back to you soon.</p>
+        <p id="reportSuccessMessage" style="color:rgba(255,255,255,0.7);font-size:0.9rem;line-height:1.6;margin-bottom:28px;">Thanks! We've got your report and will get back to you soon.</p>
         <button onclick="closeReportSuccessModal()" style="background:linear-gradient(135deg,#4CAF50,#388E3C);color:#fff;border:none;padding:12px 32px;border-radius:var(--radius-sm);font-size:0.95rem;font-weight:600;cursor:pointer;min-width:160px;transition:opacity 0.2s;" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">OK, Got It</button>
     </div>
 </div>
@@ -589,7 +589,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <option value="">Any available room</option>
                         <?php foreach ($availableRooms as $r): ?>
                         <option value="<?= $r['id'] ?>" <?= (isset($_POST['room_id']) && $_POST['room_id'] == $r['id']) ? 'selected' : '' ?>>
-                            <?= sanitize($r['room_number']) ?> — <?= sanitize(ucfirst($r['room_type'])) ?> — GH&#8373; <?= number_format($r['rental_price'], 0) ?>/<?= ($r['charge_period'] ?? 'monthly') === 'daily' ? 'day' : 'mo' ?>
+                            <?= sanitize($r['room_number']) ?> &bull; <?= sanitize(ucfirst($r['room_type'])) ?> &bull; GH&#8373; <?= number_format($r['rental_price'], 0) ?>/<?= ($r['charge_period'] ?? 'monthly') === 'daily' ? 'day' : 'mo' ?>
                         </option>
                         <?php endforeach; ?>
                     </select>
@@ -636,7 +636,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <div class="footer-grid">
         <div class="footer-brand">
             <h3><i class='bx bx-home'></i> <span class="brand-gold">PK's</span> <span style="color:#fff;">Luxury Apartments</span></h3>
-            <p>Premium apartment living in Haatso, Accra — modern residences, great amenities, and tenants who actually love living here.</p>
+            <p>Premium apartment living in Haatso, Accra: modern residences, great amenities, and tenants who actually love living here.</p>
         </div>
         <div class="footer-col">
             <h4>Quick Links</h4>
@@ -837,7 +837,7 @@ async function submitPublicReport(e) {
         if (data.success) {
             e.target.reset();
             e.target.querySelectorAll('input, textarea, select').forEach(el => { el.value = el.tagName === 'SELECT' ? el.options[0].value : ''; });
-            document.getElementById('reportSuccessMessage').textContent = data.message || 'Thanks — we\'ve got your report and will get back to you soon.';
+            document.getElementById('reportSuccessMessage').textContent = data.message || 'Thanks! We\'ve got your report and will get back to you soon.';
             document.getElementById('reportSuccessModal').classList.add('active');
             document.body.style.overflow = 'hidden';
         } else {
@@ -848,7 +848,7 @@ async function submitPublicReport(e) {
         btn.disabled = false;
         e.target.reset();
         e.target.querySelectorAll('input, textarea, select').forEach(el => { el.value = el.tagName === 'SELECT' ? el.options[0].value : ''; });
-        document.getElementById('reportSuccessMessage').textContent = 'Thanks — we\'ve got your report and will get back to you soon.';
+        document.getElementById('reportSuccessMessage').textContent = 'Thanks! We\'ve got your report and will get back to you soon.';
         document.getElementById('reportSuccessModal').classList.add('active');
         document.body.style.overflow = 'hidden';
     }
@@ -950,8 +950,8 @@ function updateBookingPaymentInfo() {
     const methodLabel = method === 'paystack' ? 'Mobile Money' : 'Bank Transfer';
 
     info.innerHTML = '<strong>' + label + ':</strong> GH&#8373; ' + amount.toLocaleString(undefined, {minimumFractionDigits:2}) +
-        ' via ' + methodLabel + (method === 'bank_transfer' ? ' — Bank details will be shown after submission.' : '') +
-        (method === 'paystack' ? ' — You will be redirected to complete payment.' : '') +
+        ' via ' + methodLabel + (method === 'bank_transfer' ? '. Bank details will be shown after submission.' : '') +
+        (method === 'paystack' ? '. You will be redirected to complete payment.' : '') +
         '<br><span style="font-size:0.78rem;color:var(--warning);font-weight:600;">Balance must be paid within 1 week of move-in.</span>';
     info.style.display = 'block';
 }
