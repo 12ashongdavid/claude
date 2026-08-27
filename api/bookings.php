@@ -38,6 +38,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             jsonOut(['error' => $emailCheck['message']]);
             exit;
         }
+        if ($preferred_date && $preferred_date < date('Y-m-d')) {
+            jsonOut(['error' => "Your preferred view-in date can't be in the past. Please choose today or a later date."]);
+            exit;
+        }
 
         $validPaymentTypes = ['none', 'down_payment', 'full_payment'];
         if (!in_array($payment_type, $validPaymentTypes)) {

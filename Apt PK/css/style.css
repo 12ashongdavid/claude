@@ -104,6 +104,7 @@
 *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 html { font-size: 15px; scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
 
+html { overflow-x: hidden; }
 body {
     font-family: var(--font);
     background: var(--bg);
@@ -112,6 +113,7 @@ body {
     min-height: 100vh;
     -webkit-font-smoothing: antialiased;
     transition: background-color 0.4s var(--ease), color 0.4s var(--ease);
+    overflow-x: hidden;
 }
 
 a { text-decoration: none; color: var(--accent); transition: var(--t-fast); }
@@ -2234,8 +2236,13 @@ textarea.form-control.is-invalid {
     .room-grid { grid-template-columns: 1fr; }
     .booking-nav { padding: 0 16px; }
     .booking-nav-links a:not(.btn-signin) { display: none; }
-    .booking-hero h1 { font-size: 2.3rem; }
-    .booking-hero-stats { gap: 26px; flex-wrap: wrap; }
+    .booking-nav-links { gap: 10px; }
+    .booking-nav-brand { font-size: 0.92rem; gap: 6px; }
+    .btn-signin { padding: 7px 14px; font-size: 0.8rem; }
+    .booking-hero { padding: 90px 16px 50px; }
+    .booking-hero h1 { font-size: 2.1rem; }
+    .booking-hero p { font-size: 0.98rem; }
+    .booking-hero-stats { gap: 20px; flex-wrap: wrap; }
     .about-grid, .location-grid { grid-template-columns: 1fr; }
     .amenities-grid { grid-template-columns: 1fr 1fr; }
     .testimonials-grid { grid-template-columns: 1fr; }
@@ -2250,6 +2257,17 @@ textarea.form-control.is-invalid {
     .amenities-grid { grid-template-columns: 1fr; }
     .footer-grid { grid-template-columns: 1fr; }
     .toast { min-width: 0; width: calc(100vw - 40px); }
+    .booking-nav { padding: 0 12px; }
+    .booking-nav-links { gap: 6px; }
+    .nav-brand-full { display: none; }
+    .btn-signin { padding: 6px 10px; font-size: 0.74rem; }
+    .theme-toggle { width: 32px; height: 32px; padding: 0; font-size: 1rem; }
+    .booking-hero-badge { font-size: 0.68rem; padding: 6px 16px; letter-spacing: 1px; }
+    .booking-hero h1 { font-size: 1.7rem; letter-spacing: -1px; }
+    .booking-hero-actions { gap: 10px; }
+    .btn-hero-primary, .btn-hero-outline { padding: 13px 26px; font-size: 0.92rem; }
+    .booking-hero-stats { gap: 16px 24px; }
+    .booking-hero-stat h3 { font-size: 1.5rem; }
 }
 
 /* ---- Reduced Motion ---- */

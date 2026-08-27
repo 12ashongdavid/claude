@@ -33,6 +33,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $error = 'Phone number must be exactly 10 digits.';
         } elseif (!$emailCheck['valid']) {
             $error = $emailCheck['message'];
+        } elseif ($preferred_date && $preferred_date < date('Y-m-d')) {
+            $error = "Your preferred view-in date can't be in the past. Please choose today or a later date.";
         } else {
             $payment_amount = 0;
             $payment_reference = '';
