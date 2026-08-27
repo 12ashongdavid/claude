@@ -399,7 +399,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <div class="testimonials-grid stagger">
             <div class="testimonial-card">
                 <div class="testimonial-text">
-                    Living at PK's Luxury Apartments has been a wonderful experience. The rooms are clean, the WiFi is fast, and the management is very responsive to any issues.
+                    My shower stopped working on a Sunday and I wasn't expecting anyone to come until Monday. Someone from maintenance showed up within the hour. That's when I knew I'd picked the right place.
                 </div>
                 <div class="testimonial-author">
                     <div class="testimonial-avatar">AA</div>
@@ -411,7 +411,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
             <div class="testimonial-card">
                 <div class="testimonial-text">
-                    The location is perfect — close to everything I need in Haatso. The rent is affordable for the quality you get. I highly recommend PK's Luxury Apartments.
+                    I picked this place mainly because I can walk to the market and catch a trotro without stress. Turned out to be a good move — my friends pay more for a lot less space.
                 </div>
                 <div class="testimonial-author">
                     <div class="testimonial-avatar">KB</div>
@@ -423,7 +423,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
             <div class="testimonial-card">
                 <div class="testimonial-text">
-                    Great security, reliable water and power supply. The online payment system makes rent payment so convenient. Best apartment I've lived in Accra.
+                    I used to dread rent day because it meant queuing at the office with cash. Now I just pay from my phone in a couple of minutes. Small thing, but it made a real difference for me.
                 </div>
                 <div class="testimonial-author">
                     <div class="testimonial-avatar">EM</div>
