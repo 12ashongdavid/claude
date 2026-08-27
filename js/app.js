@@ -1,7 +1,4 @@
-// =====================================================
-// PK's Luxury Apartments — Main JavaScript
-// Apartment Management System
-// =====================================================
+// Shared front-end behavior for every page: theme toggle, modals, toasts, sidebar, and form validation.
 
 // ---- Theme Toggle (manipulates CSS via [data-theme]) ----
 function initTheme() {

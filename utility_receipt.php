@@ -1,8 +1,5 @@
 <?php
-// =====================================================
-// Utility Bill Receipt
-// PK's Luxury Apartments — Apartment Management System
-// =====================================================
+// Renders a printable receipt for a paid utility bill.
 require_once __DIR__ . '/config/database.php';
 requireLogin();
 

@@ -1,8 +1,5 @@
 <?php
-// =====================================================
-// Feedback Reports Page (Admin/Staff) — polished UI
-// PK's Luxury Apartments — Apartment Management System
-// =====================================================
+// Lets admin/staff review feedback and complaints from tenants and visitors, and reply to them.
 require_once __DIR__ . '/config/database.php';
 $pageTitle = 'Feedback Reports';
 requireRole(['admin', 'staff']);

@@ -1,8 +1,5 @@
 <?php
-// =====================================================
-// API: Feedback Reports (tenant + public submissions, admin management)
-// PK's Luxury Apartments — Apartment Management System
-// =====================================================
+// Handles feedback/complaint reports from tenants and the public, plus admin replies and status tracking.
 require_once __DIR__ . '/../config/database.php';
 
 header('Content-Type: application/json');
@@ -54,8 +51,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             echo json_encode(['error' => 'Phone number must be exactly 10 digits (numbers only).']);
             exit;
         }
-        if (!empty($reporterEmail) && !validateEmail($reporterEmail)) {
-            echo json_encode(['error' => 'Please enter a valid email address.']);
+        $emailCheck = validateEmailDetailed($reporterEmail);
+        if (!$emailCheck['valid']) {
+            echo json_encode(['error' => $emailCheck['message']]);
             exit;
         }
 

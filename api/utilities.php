@@ -1,7 +1,5 @@
 <?php
-// =====================================================
-// API: Utility Bills CRUD
-// =====================================================
+// Handles utility bills — creating them for a tenant and marking them paid.
 require_once __DIR__ . '/../config/database.php';
 requireLogin();
 
@@ -60,8 +58,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($tenant) {
             $month_label = date('F Y', strtotime($billing_month . '-01'));
             $stmt = $db->prepare("INSERT INTO notifications (user_id, title, message, type, link) VALUES (?, 'Utility Bill Due', ?, 'utility', 'utilities.php')");
-            $stmt->execute([$tenant_id, "Your " . ucfirst($bill_type) . " bill of " . formatCurrency($amount) . " for $month_label is now due."]);
-            sendSMS($tenant['phone'], "Dear " . $tenant['full_name'] . ", your " . ucfirst($bill_type) . " bill of GH₵ " . number_format($amount, 2) . " for $month_label is now due. Please pay at the office. Thank you.");
+            $stmt->execute([$tenant_id, "Your $bill_type bill of " . formatCurrency($amount) . " for $month_label is now due."]);
+            sendSMS($tenant['phone'], "Dear " . $tenant['full_name'] . ", your $bill_type bill of GH₵ " . number_format($amount, 2) . " for $month_label is now due. Please pay at the office. Thank you.");
         }
 
         echo json_encode(['success' => true, 'id' => $db->lastInsertId()]);
@@ -83,8 +81,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($bill) {
             $month_label = date('F Y', strtotime($bill['billing_month'] . '-01'));
             $stmt = $db->prepare("INSERT INTO notifications (user_id, title, message, type, link) VALUES (?, 'Utility Bill Paid', ?, 'utility', 'utilities.php')");
-            $stmt->execute([$bill['tenant_id'], "Your " . ucfirst($bill['bill_type']) . " bill of " . formatCurrency($bill['amount']) . " for $month_label has been marked as paid."]);
-            sendSMS($bill['phone'], "Dear " . $bill['full_name'] . ", your " . ucfirst($bill['bill_type']) . " bill of GH₵ " . number_format($bill['amount'], 2) . " for $month_label has been marked as paid. Thank you!");
+            $stmt->execute([$bill['tenant_id'], "Your " . $bill['bill_type'] . " bill of " . formatCurrency($bill['amount']) . " for $month_label has been marked as paid."]);
+            sendSMS($bill['phone'], "Dear " . $bill['full_name'] . ", your " . $bill['bill_type'] . " bill of GH₵ " . number_format($bill['amount'], 2) . " for $month_label has been marked as paid. Thank you!");
         }
 
         echo json_encode(['success' => true]);

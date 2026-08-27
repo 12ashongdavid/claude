@@ -1,8 +1,5 @@
 <?php
-// =====================================================
-// Utility Bills Page
-// PK's Luxury Apartments — Apartment Management System
-// =====================================================
+// Lets tenants view and pay their utility bills, and lets admin/staff add bills and mark them paid.
 require_once __DIR__ . '/config/database.php';
 $pageTitle = 'Utility Bills';
 requireLogin();

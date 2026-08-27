@@ -54,8 +54,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             echo json_encode(['error' => 'Phone number must be exactly 10 digits (numbers only).']);
             exit;
         }
-        if (!empty($reporterEmail) && !validateEmail($reporterEmail)) {
-            echo json_encode(['error' => 'Please enter a valid email address.']);
+        $emailCheck = validateEmailDetailed($reporterEmail);
+        if (!$emailCheck['valid']) {
+            echo json_encode(['error' => $emailCheck['message']]);
             exit;
         }
 

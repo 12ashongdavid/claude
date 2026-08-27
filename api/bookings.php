@@ -1,7 +1,5 @@
 <?php
-// =====================================================
-// API: Bookings (Prospective Tenants) — with payment support
-// =====================================================
+// Handles booking requests from prospective tenants, including the optional deposit payment.
 ob_start();
 require_once __DIR__ . '/../config/database.php';
 
@@ -27,16 +25,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $payment_type = $_POST['payment_type'] ?? 'none';
         $payment_method = $_POST['payment_method'] ?? 'paystack';
 
-        if (empty($full_name) || empty($phone)) {
-            jsonOut(['error' => 'Name and phone are required.']);
+        if (empty($full_name) || empty($phone) || empty($email)) {
+            jsonOut(['error' => 'Name, phone, and email are required.']);
             exit;
         }
         if (!validatePhone($phone)) {
             jsonOut(['error' => 'Phone number must be exactly 10 digits.']);
             exit;
         }
-        if (!empty($email) && !validateEmail($email)) {
-            jsonOut(['error' => 'Please enter a valid email address.']);
+        $emailCheck = validateEmailDetailed($email);
+        if (!$emailCheck['valid']) {
+            jsonOut(['error' => $emailCheck['message']]);
             exit;
         }
 
@@ -164,7 +163,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         sendSMS($phone, $booker_sms);
         if ($admins) {
-            sendSMS($admins[0]['phone'], "New booking from $full_name$room_label. Phone: $phone$payment_note");
+            sendSMS($admins[0]['phone'], "New booking from $full_name$room_label. Phone: $phone." . $payment_note);
         }
         exit;
     }

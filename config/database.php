@@ -1,8 +1,5 @@
 <?php
-// =====================================================
-// Database Configuration
-// PK's Luxury Apartments — Apartment Management System
-// =====================================================
+// Database connection, session setup, and the shared helper functions used everywhere else.
 
 define('DB_HOST', 'localhost');
 define('DB_NAME', 'pk_ams');
@@ -30,16 +27,12 @@ if (!defined('SITE_URL')) {
 
 define('UPLOAD_PATH', __DIR__ . '/../uploads/');
 
-// =====================================================
-// mNotify SMS Configuration
-// =====================================================
+// mNotify SMS settings
 define('MNOTIFY_API_KEY', 'WmR0TbwuaoDoDJmwm38qhysfz');
 define('MNOTIFY_SENDER_ID', 'PkluxuryAPT');
 define('MNOTIFY_ENDPOINT', 'https://api.mnotify.com/api/sms/quick');
 
-// =====================================================
-// Paystack Configuration (Test keys)
-// =====================================================
+// Paystack settings (currently pointed at test keys)
 define('PAYSTACK_SECRET_KEY', 'sk_test_98b041aab15fb78624406cd3d0d56930f8e7642a');
 define('PAYSTACK_PUBLIC_KEY', 'pk_test_37e1ef9de3ebdaa9ab1439031ecf4b6fb2a21f4f');
 define('PAYSTACK_API', 'https://api.paystack.co');
@@ -105,7 +98,7 @@ function getDB() {
 function _bootstrapDatabase() {
     $dbName = DB_NAME;
 
-    // 1. Connect to MySQL WITHOUT selecting a database
+    // Connect to MySQL first, without selecting a database
     try {
         $pdo = new PDO("mysql:host=" . DB_HOST . ";charset=utf8mb4", DB_USER, DB_PASS, [
             PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
@@ -116,11 +109,11 @@ function _bootstrapDatabase() {
         die("<h2>Cannot connect to MySQL server</h2><p>" . $e->getMessage() . "</p><p>Make sure MySQL/MariaDB is running (start Apache & MySQL in XAMPP).</p>");
     }
 
-    // 2. Create the database
+    // Create the database if it doesn't exist yet
     $pdo->exec("CREATE DATABASE IF NOT EXISTS `$dbName` CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci");
     $pdo->exec("USE `$dbName`");
 
-    // 3. Read and execute setup.sql
+    // Load and run setup.sql to create the tables and seed data
     $sqlFile = __DIR__ . '/../setup.sql';
     if (!is_file($sqlFile)) {
         die("<h2>setup.sql not found</h2><p>Expected at: " . htmlspecialchars($sqlFile) . "</p>");
@@ -186,7 +179,7 @@ function sanitize($input) {
     return htmlspecialchars(trim($input), ENT_QUOTES, 'UTF-8');
 }
 
-// Validate password strength (industry standard)
+// Check password meets our complexity rules
 function validatePassword($password) {
     $errors = [];
     if (strlen($password) < 8) {
@@ -307,32 +300,69 @@ function validatePhone($phone) {
     return strlen($phone) === 10;
 }
 
-// Validate email (strict IT standards)
-function validateEmail($email) {
-    if (empty($email)) {
+// The webmail providers we accept outright, plus Ghanaian school/government
+// domains recognized by suffix — new institutions register under these
+// endings all the time, so listing every one by name would go stale fast.
+function getAcceptedEmailDomains() {
+    return ['gmail.com', 'yahoo.com', 'outlook.com', 'hotmail.com', 'icloud.com', 'aol.com', 'protonmail.com'];
+}
+
+function getAcceptedEmailDomainSuffixes() {
+    return ['.edu.gh', '.ac.gh', '.gov.gh'];
+}
+
+function isAcceptedEmailDomain($domain) {
+    $domain = strtolower($domain);
+    if (in_array($domain, getAcceptedEmailDomains(), true)) {
         return true;
     }
+    foreach (getAcceptedEmailDomainSuffixes() as $suffix) {
+        if (substr($domain, -strlen($suffix)) === $suffix) {
+            return true;
+        }
+    }
+    return false;
+}
+
+// The one place every email address in the app gets checked. Walks through
+// the checks in order and stops at the first thing wrong, so the message
+// always explains the actual problem instead of a generic "invalid email".
+// An empty value is treated as valid here — whether email is required at
+// all is a decision for the caller, not this function.
+function validateEmailDetailed($email, $skipWhitelist = false) {
+    $email = strtolower(trim($email));
+    if ($email === '') {
+        return ['valid' => true, 'message' => ''];
+    }
     if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-        return false;
+        return ['valid' => false, 'message' => 'Please enter a valid email address (e.g. name@example.com).'];
     }
     $parts = explode('@', $email);
     if (count($parts) !== 2) {
-        return false;
+        return ['valid' => false, 'message' => 'Please enter a valid email address (e.g. name@example.com).'];
     }
-    $local = $parts[0];
-    $domain = $parts[1];
+    [$local, $domain] = $parts;
+    if (strpos($local, '..') !== false || strpos($domain, '..') !== false) {
+        return ['valid' => false, 'message' => 'Email addresses can\'t contain two dots in a row.'];
+    }
     if (strlen($local) > 64 || strlen($domain) > 255) {
-        return false;
-    }
-    if (preg_match('/\.\./', $local) || preg_match('/\.\./', $domain)) {
-        return false;
+        return ['valid' => false, 'message' => 'That email address is too long.'];
     }
     $domainParts = explode('.', $domain);
     $tld = end($domainParts);
     if (strlen($tld) < 2 || strlen($tld) > 10) {
-        return false;
+        return ['valid' => false, 'message' => 'That email address has an invalid ending (e.g. .com, .org).'];
     }
-    return true;
+    if (!$skipWhitelist && !isAcceptedEmailDomain($domain)) {
+        return ['valid' => false, 'message' => 'Please use an accepted email provider (Gmail, Yahoo, Outlook, Hotmail, iCloud, AOL, ProtonMail, or a Ghanaian school/government address).'];
+    }
+    return ['valid' => true, 'message' => ''];
+}
+
+// Simple pass/fail wrapper around validateEmailDetailed() for callers that
+// don't need the explanation, just a yes or no.
+function validateEmail($email, $skipWhitelist = false) {
+    return validateEmailDetailed($email, $skipWhitelist)['valid'];
 }
 
 // Validate that a start date is not more than 1 month in the past

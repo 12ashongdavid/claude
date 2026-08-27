@@ -1,8 +1,5 @@
 <?php
-// =====================================================
-// Paystack Helper — shared by api/paystack.php and webhook
-// PK's Luxury Apartments — Apartment Management System
-// =====================================================
+// Paystack API calls and payment recording, shared by api/paystack.php and the webhook.
 
 // Low-level Paystack API call (best-effort cURL)
 function paystackApiCall($method, $endpoint, $payload = null) {

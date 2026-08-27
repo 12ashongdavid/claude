@@ -1,10 +1,6 @@
 <?php
-// =====================================================
-// Cron: Auto-Deactivate Inactive Accounts
-// Deactivates tenants/staff who haven't logged in for 365 days.
-// Schedule: Run daily via cron (e.g. 0 2 * * * php /path/to/cron/deactivate_inactive.php)
-// PK's Luxury Apartments — Apartment Management System
-// =====================================================
+// Daily cron job: deactivates tenants/staff who haven't logged in for 365 days.
+// Schedule example: 0 2 * * * php /path/to/cron/deactivate_inactive.php
 require_once __DIR__ . '/../config/database.php';
 $db = getDB();
 

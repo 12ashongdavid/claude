@@ -1,8 +1,5 @@
 <?php
-// =====================================================
-// Tenants Management Page
-// PK's Luxury Apartments — Apartment Management System
-// =====================================================
+// Tenant management: register tenants, track rent arrears, and manage tenancy agreements.
 require_once __DIR__ . '/config/database.php';
 $pageTitle = 'Tenants';
 requireRole(['admin', 'staff']);
@@ -92,8 +89,8 @@ include __DIR__ . '/includes/header.php';
                         <input type="tel" name="phone" class="form-control" pattern="[0-9]{10}" maxlength="10" oninput="this.value=this.value.replace(/[^0-9]/g,'')" placeholder="10 digits only" required>
                     </div>
                     <div class="form-group">
-                        <label>Email</label>
-                        <input type="email" name="email" class="form-control" placeholder="user@example.com">
+                        <label>Email *</label>
+                        <input type="email" name="email" class="form-control" placeholder="e.g. name@example.com" pattern="[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}" required>
                     </div>
                 </div>
                 <div class="form-row">

@@ -1,7 +1,5 @@
 <?php
-// =====================================================
-// API: Maintenance Requests
-// =====================================================
+// Handles tenant maintenance requests — submission, admin/staff assignment, and status updates.
 require_once __DIR__ . '/../config/database.php';
 requireLogin();
 

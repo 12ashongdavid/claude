@@ -25,16 +25,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $payment_type = $_POST['payment_type'] ?? 'none';
         $payment_method = $_POST['payment_method'] ?? 'paystack';
 
-        if (empty($full_name) || empty($phone)) {
-            echo json_encode(['error' => 'Name and phone are required.']);
+        if (empty($full_name) || empty($phone) || empty($email)) {
+            echo json_encode(['error' => 'Name, phone, and email are required.']);
             exit;
         }
         if (!validatePhone($phone)) {
             echo json_encode(['error' => 'Phone number must be exactly 10 digits.']);
             exit;
         }
-        if (!empty($email) && !validateEmail($email)) {
-            echo json_encode(['error' => 'Please enter a valid email address.']);
+        $emailCheck = validateEmailDetailed($email);
+        if (!$emailCheck['valid']) {
+            echo json_encode(['error' => $emailCheck['message']]);
             exit;
         }
 
@@ -92,7 +93,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             $db->prepare($notifSql)->execute($notifParams);
             // SMS to first admin only (non-blocking)
-            sendSMS($admins[0]['phone'], "New booking request from $full_name$room_label. Phone: $phone$payment_note");
+            sendSMS($admins[0]['phone'], "New booking request from $full_name$room_label. Phone: $phone." . $payment_note);
         }
 
         sendSMS($phone, "Dear $full_name, your booking request has been received" . ($payment_type !== 'none' ? " with a payment of " . formatCurrency($payment_amount) : "") . ". PK's Luxury Apartments will contact you within 24 hours.");

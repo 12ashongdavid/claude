@@ -1,8 +1,5 @@
 <?php
-// =====================================================
-// API: Paystack — initialize + verify callback
-// PK's Luxury Apartments — Apartment Management System
-// =====================================================
+// Initializes Paystack transactions for rent and utility payments, and verifies the callback once Paystack redirects back.
 ob_start();
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../config/paystack_helper.php';

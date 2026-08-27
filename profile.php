@@ -1,8 +1,5 @@
 <?php
-// =====================================================
-// Profile Page
-// PK's Luxury Apartments — Apartment Management System
-// =====================================================
+// Lets the logged-in user view their account details and edit their profile or password.
 require_once __DIR__ . '/config/database.php';
 $pageTitle = 'My Profile';
 requireLogin();
@@ -52,8 +49,8 @@ include __DIR__ . '/includes/header.php';
                     <input type="tel" name="phone" class="form-control" value="<?= sanitize($user['phone']) ?>" pattern="[0-9]{10}" maxlength="10" oninput="this.value=this.value.replace(/[^0-9]/g,'')" required>
                 </div>
                 <div class="form-group">
-                    <label>Email</label>
-                    <input type="email" name="email" class="form-control" value="<?= sanitize($user['email'] ?? '') ?>">
+                    <label>Email *</label>
+                    <input type="email" name="email" class="form-control" placeholder="e.g. name@example.com" pattern="[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}" value="<?= sanitize($user['email'] ?? '') ?>" required>
                 </div>
             </div>
             <div class="form-group">

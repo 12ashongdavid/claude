@@ -1,8 +1,5 @@
 <?php
-// =====================================================
-// Login Page
-// PK's Luxury Apartments — Apartment Management System
-// =====================================================
+// Login form and authentication handling.
 require_once __DIR__ . '/config/database.php';
 sendSecurityHeaders();
 

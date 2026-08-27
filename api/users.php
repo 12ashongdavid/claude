@@ -1,7 +1,5 @@
 <?php
-// =====================================================
-// API: Users (Tenants list, Profile update)
-// =====================================================
+// Handles user accounts — profile updates, plus admin/staff management of tenants and staff.
 require_once __DIR__ . '/../config/database.php';
 requireLogin();
 
@@ -31,8 +29,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             echo json_encode(['error' => 'Phone number must contain exactly 10 digits (numbers only).']);
             exit;
         }
-        if (!empty($email) && !validateEmail($email)) {
-            echo json_encode(['error' => 'Please enter a valid email address.']);
+        if (empty($email)) {
+            echo json_encode(['error' => 'Email address is required.']);
+            exit;
+        }
+        $emailCheck = validateEmailDetailed($email);
+        if (!$emailCheck['valid']) {
+            echo json_encode(['error' => $emailCheck['message']]);
             exit;
         }
         if (!empty($date_of_birth) && !validateAge($date_of_birth)) {
@@ -113,16 +116,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $monthly_rent = floatval($_POST['monthly_rent'] ?? 0);
         $date_of_birth = $_POST['date_of_birth'] ?? null;
 
-        if (empty($full_name) || empty($username) || empty($phone)) {
-            echo json_encode(['error' => 'Name, username, and phone are required.']);
+        if (empty($full_name) || empty($username) || empty($phone) || empty($email)) {
+            echo json_encode(['error' => 'Name, username, phone, and email are required.']);
             exit;
         }
         if (!validatePhone($phone)) {
             echo json_encode(['error' => 'Phone number must contain exactly 10 digits (numbers only).']);
             exit;
         }
-        if (!empty($email) && !validateEmail($email)) {
-            echo json_encode(['error' => 'Please enter a valid email address.']);
+        $emailCheck = validateEmailDetailed($email);
+        if (!$emailCheck['valid']) {
+            echo json_encode(['error' => $emailCheck['message']]);
             exit;
         }
         if (!validateStartDate($start_date)) {
@@ -196,16 +200,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $email = trim($_POST['email'] ?? '');
         $phone = trim($_POST['phone'] ?? '');
 
-        if (empty($full_name) || empty($username) || empty($phone)) {
-            echo json_encode(['error' => 'Name, username, and phone are required.']);
+        if (empty($full_name) || empty($username) || empty($phone) || empty($email)) {
+            echo json_encode(['error' => 'Name, username, phone, and email are required.']);
             exit;
         }
         if (!validatePhone($phone)) {
             echo json_encode(['error' => 'Phone number must contain exactly 10 digits (numbers only).']);
             exit;
         }
-        if (!empty($email) && !validateEmail($email)) {
-            echo json_encode(['error' => 'Please enter a valid email address.']);
+        $emailCheck = validateEmailDetailed($email);
+        if (!$emailCheck['valid']) {
+            echo json_encode(['error' => $emailCheck['message']]);
             exit;
         }
 

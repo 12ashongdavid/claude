@@ -1,8 +1,5 @@
 <?php
-// =====================================================
-// Standalone Booking Page — with payment step
-// PK's Luxury Apartments — Apartment Management System
-// =====================================================
+// Public booking form for prospective tenants — collects their details, then walks them through an optional deposit payment.
 require_once __DIR__ . '/config/database.php';
 $db = getDB();
 
@@ -29,10 +26,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $payment_type = $_POST['payment_type'] ?? 'none';
         $payment_method = $_POST['payment_method'] ?? 'paystack';
 
-        if (empty($full_name) || empty($phone)) {
-            $error = 'Please provide your name and phone number.';
+        $emailCheck = validateEmailDetailed($email);
+        if (empty($full_name) || empty($phone) || empty($email)) {
+            $error = 'Please provide your name, phone number, and email address.';
         } elseif (!validatePhone($phone)) {
             $error = 'Phone number must be exactly 10 digits.';
+        } elseif (!$emailCheck['valid']) {
+            $error = $emailCheck['message'];
         } else {
             $payment_amount = 0;
             $payment_reference = '';
@@ -105,7 +105,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             $pendingSms[] = ['phone' => $phone, 'msg' => $booker_sms];
             if ($admins) {
-                $pendingSms[] = ['phone' => $admins[0]['phone'], 'msg' => "New booking from $full_name$room_label. Phone: $phone$payment_note"];
+                $pendingSms[] = ['phone' => $admins[0]['phone'], 'msg' => "New booking from $full_name$room_label. Phone: $phone." . $payment_note];
             }
 
             $success = 'Your booking request has been submitted! We will contact you within 24 hours.';
@@ -217,9 +217,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         </div>
                     </div>
                     <div class="form-group">
-                        <label>Email Address</label>
-                        <input type="email" name="email" class="form-control" placeholder="your@email.com"
-                            value="<?= sanitize($user ? ($user['email'] ?? '') : ($_POST['email'] ?? '')) ?>">
+                        <label>Email Address *</label>
+                        <input type="email" name="email" class="form-control" placeholder="e.g. name@example.com" pattern="[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}"
+                            value="<?= sanitize($user ? ($user['email'] ?? '') : ($_POST['email'] ?? '')) ?>" required>
                     </div>
                     <div class="form-row">
                         <div class="form-group">
@@ -390,6 +390,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     function fmtCcy(n) { return 'GH\u20B5 ' + Number(n).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
     </script>
+    <script src="js/email-validator.js"></script>
     <?php if (!empty($pendingSms)): foreach ($pendingSms as $sms) { sendSMS($sms['phone'], $sms['msg']); } endif; ?>
 </body>
 </html>

@@ -1,8 +1,5 @@
 <?php
-// =====================================================
-// Staff Management Page (Admin only)
-// PK's Luxury Apartments — Apartment Management System
-// =====================================================
+// Lets an admin add, view, and manage staff accounts.
 require_once __DIR__ . '/config/database.php';
 $pageTitle = 'Staff';
 requireRole(['admin']);
@@ -62,8 +59,8 @@ include __DIR__ . '/includes/header.php';
                         <input type="tel" name="phone" class="form-control" pattern="[0-9]{10}" maxlength="10" oninput="this.value=this.value.replace(/[^0-9]/g,'')" required>
                     </div>
                     <div class="form-group">
-                        <label>Email</label>
-                        <input type="email" name="email" class="form-control">
+                        <label>Email *</label>
+                        <input type="email" name="email" class="form-control" placeholder="e.g. name@example.com" pattern="[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}" required>
                     </div>
                 </div>
                 <div style="display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--accent-light);border-radius:var(--radius-sm);font-size:0.78rem;color:var(--text-secondary);">

@@ -1,8 +1,5 @@
 <?php
-// =====================================================
-// Includes: Header
-// PK's Luxury Apartments — Apartment Management System
-// =====================================================
+// Shared page chrome: sidebar nav, top bar, and notifications — included at the top of every logged-in page.
 require_once __DIR__ . '/../config/database.php';
 sendSecurityHeaders();
 $user = currentUser();

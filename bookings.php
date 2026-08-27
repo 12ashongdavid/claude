@@ -1,8 +1,5 @@
 <?php
-// =====================================================
-// Bookings Page (Admin/Staff) — with payment management
-// PK's Luxury Apartments — Apartment Management System
-// =====================================================
+// Admin/staff view of booking requests — approve or reject bookings and confirm their deposit payments.
 require_once __DIR__ . '/config/database.php';
 $pageTitle = 'Booking Requests';
 requireRole(['admin', 'staff']);

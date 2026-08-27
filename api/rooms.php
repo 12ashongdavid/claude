@@ -1,7 +1,5 @@
 <?php
-// =====================================================
-// API: Rooms CRUD (with image upload)
-// =====================================================
+// Handles rooms (residences) — CRUD, image gallery uploads, and room type management.
 require_once __DIR__ . '/../config/database.php';
 requireLogin();
 

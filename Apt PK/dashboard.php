@@ -1,8 +1,5 @@
 <?php
-// =====================================================
-// Dashboard Page
-// PK's Luxury Apartments — Apartment Management System
-// =====================================================
+// Home dashboard — shows admin/staff the property overview, or a tenant their own room and payments.
 require_once __DIR__ . '/config/database.php';
 $pageTitle = 'Dashboard';
 requireRole(['admin', 'staff', 'tenant']);

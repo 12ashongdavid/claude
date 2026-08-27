@@ -1,7 +1,5 @@
 <?php
-// =====================================================
-// API: Logout — Destroys session completely
-// =====================================================
+// Logs the user out by wiping the session and its cookie, then sends them back to the login page.
 require_once __DIR__ . '/../config/database.php';
 
 $_SESSION = [];
