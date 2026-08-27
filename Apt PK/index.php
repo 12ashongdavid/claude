@@ -222,8 +222,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <div class="section-tag">About Us</div>
                 </div>
                 <h3>A Place You'll Be Proud to Call Home</h3>
-                <p>PK's Luxury Apartments is a premier residential property located in the vibrant neighborhood of Haatso, Accra. We offer a range of modern living spaces designed to meet the needs of young professionals, families, and students.</p>
-                <p>Our commitment to quality, security, and resident satisfaction makes us the preferred choice for discerning tenants in Accra.</p>
+                <p>PK's Luxury Apartments sits in the heart of Haatso, Accra, one of the city's liveliest neighborhoods. Our homes are built for young professionals, families, and students alike — wherever you are in life, we've got a space that fits.</p>
+                <p>We care about doing the basics right — quality, security, and making sure our tenants are genuinely happy here. It's why so many people choose to call PK's home.</p>
                 <div class="about-features">
                     <div class="about-feature">
                         <span class="check"><i class='bx bx-check'></i></span> Secure environment
@@ -596,7 +596,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <div class="footer-grid">
         <div class="footer-brand">
             <h3><i class='bx bx-home'></i> <span class="brand-gold">PK's</span> <span style="color:#fff;">Luxury Apartments</span></h3>
-            <p>Premium apartment living in Haatso, Accra. Modern residences, excellent amenities, and a commitment to tenant satisfaction.</p>
+            <p>Premium apartment living in Haatso, Accra — modern residences, great amenities, and tenants who actually love living here.</p>
         </div>
         <div class="footer-col">
             <h4>Quick Links</h4>

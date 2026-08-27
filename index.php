@@ -254,8 +254,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <div class="section-tag">About Us</div>
                 </div>
                 <h3>A Place You'll Be Proud to Call Home</h3>
-                <p>PK's Luxury Apartments is a premier residential property located in the vibrant neighborhood of Haatso, Accra. We offer a range of modern living spaces designed to meet the needs of young professionals, families, and students.</p>
-                <p>Our commitment to quality, security, and resident satisfaction makes us the preferred choice for discerning tenants in Accra.</p>
+                <p>PK's Luxury Apartments sits in the heart of Haatso, Accra, one of the city's liveliest neighborhoods. Our homes are built for young professionals, families, and students alike — wherever you are in life, we've got a space that fits.</p>
+                <p>We care about doing the basics right — quality, security, and making sure our tenants are genuinely happy here. It's why so many people choose to call PK's home.</p>
                 <div class="about-features">
                     <div class="about-feature">
                         <span class="check"><i class='bx bx-check'></i></span> Secure environment
@@ -541,7 +541,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <i class="bx bx-check-circle" style="font-size:2.6rem;color:#4CAF50;"></i>
         </div>
         <h3 style="font-size:1.25rem;margin-bottom:10px;color:#FFFFFF;font-weight:700;">Report Submitted Successfully</h3>
-        <p id="reportSuccessMessage" style="color:rgba(255,255,255,0.7);font-size:0.9rem;line-height:1.6;margin-bottom:28px;">Your report has been received. We will review it and respond promptly.</p>
+        <p id="reportSuccessMessage" style="color:rgba(255,255,255,0.7);font-size:0.9rem;line-height:1.6;margin-bottom:28px;">Thanks — we've got your report and will get back to you soon.</p>
         <button onclick="closeReportSuccessModal()" style="background:linear-gradient(135deg,#4CAF50,#388E3C);color:#fff;border:none;padding:12px 32px;border-radius:var(--radius-sm);font-size:0.95rem;font-weight:600;cursor:pointer;min-width:160px;transition:opacity 0.2s;" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">OK, Got It</button>
     </div>
 </div>
@@ -636,7 +636,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <div class="footer-grid">
         <div class="footer-brand">
             <h3><i class='bx bx-home'></i> <span class="brand-gold">PK's</span> <span style="color:#fff;">Luxury Apartments</span></h3>
-            <p>Premium apartment living in Haatso, Accra. Modern residences, excellent amenities, and a commitment to tenant satisfaction.</p>
+            <p>Premium apartment living in Haatso, Accra — modern residences, great amenities, and tenants who actually love living here.</p>
         </div>
         <div class="footer-col">
             <h4>Quick Links</h4>
@@ -837,7 +837,7 @@ async function submitPublicReport(e) {
         if (data.success) {
             e.target.reset();
             e.target.querySelectorAll('input, textarea, select').forEach(el => { el.value = el.tagName === 'SELECT' ? el.options[0].value : ''; });
-            document.getElementById('reportSuccessMessage').textContent = data.message || 'Your report has been received. We will review it and respond promptly.';
+            document.getElementById('reportSuccessMessage').textContent = data.message || 'Thanks — we\'ve got your report and will get back to you soon.';
             document.getElementById('reportSuccessModal').classList.add('active');
             document.body.style.overflow = 'hidden';
         } else {
@@ -848,7 +848,7 @@ async function submitPublicReport(e) {
         btn.disabled = false;
         e.target.reset();
         e.target.querySelectorAll('input, textarea, select').forEach(el => { el.value = el.tagName === 'SELECT' ? el.options[0].value : ''; });
-        document.getElementById('reportSuccessMessage').textContent = 'Your report has been received. We will review it and respond promptly.';
+        document.getElementById('reportSuccessMessage').textContent = 'Thanks — we\'ve got your report and will get back to you soon.';
         document.getElementById('reportSuccessModal').classList.add('active');
         document.body.style.overflow = 'hidden';
     }

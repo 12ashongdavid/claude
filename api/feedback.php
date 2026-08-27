@@ -79,7 +79,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
 
-        echo json_encode(['success' => true, 'message' => 'Your report has been submitted. We will review it shortly.']);
+        echo json_encode(['success' => true, 'message' => "Thanks — we've got your report and will get back to you soon."]);
         exit;
     }
 
