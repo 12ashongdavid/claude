@@ -253,6 +253,14 @@ function isLoggedIn() {
     return isset($_SESSION['user_id']);
 }
 
+// Admin/staff dashboard is desktop-only — phones and tablets are turned away.
+// UA sniffing isn't spoof-proof, but this is a UX guardrail, not a security boundary.
+function isMobileUserAgent() {
+    $ua = $_SERVER['HTTP_USER_AGENT'] ?? '';
+    if ($ua === '') return false;
+    return (bool) preg_match('/Mobi|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Windows Phone|webOS/i', $ua);
+}
+
 // Require login
 function requireLogin() {
     if (!isLoggedIn()) {
@@ -265,6 +273,12 @@ function requireLogin() {
         // Session refers to an account that no longer exists or was deactivated
         unset($_SESSION['user_id'], $_SESSION['user_role']);
         setFlash('error', 'Your account is no longer active. Please contact management.');
+        header('Location: login.php');
+        exit;
+    }
+    if (in_array($u['role'], ['admin', 'staff'], true) && isMobileUserAgent()) {
+        unset($_SESSION['user_id'], $_SESSION['user_role']);
+        setFlash('error', 'The admin and staff dashboard is only available on a desktop or laptop computer. Please sign in from a PC.');
         header('Location: login.php');
         exit;
     }

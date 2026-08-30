@@ -433,7 +433,7 @@ button { font-family: inherit; }
 .sidebar-footer a.logout-link:hover { color: #FF8080; background: rgba(222,68,68,0.14); }
 
 /* ---- Main Content ---- */
-.main-content { flex: 1; margin-left: var(--sidebar-w); min-height: 100vh; display: flex; flex-direction: column; }
+.main-content { flex: 1; min-width: 0; margin-left: var(--sidebar-w); min-height: 100vh; display: flex; flex-direction: column; }
 
 /* ---- Top Bar ---- */
 .topbar {
