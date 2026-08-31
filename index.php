@@ -6,6 +6,9 @@ $db = getDB();
 
 $availableRooms = $db->query("SELECT r.*, rt.charge_period FROM rooms r LEFT JOIN room_types rt ON rt.name = r.room_type WHERE r.status = 'available' ORDER BY r.rental_price ASC")->fetchAll();
 
+// Footer "Residence Types" list mirrors whatever types admin/staff have set up, not a hardcoded list
+$footerRoomTypes = $db->query("SELECT name FROM room_types ORDER BY id ASC")->fetchAll(PDO::FETCH_COLUMN);
+
 // Attach a gallery of admin-uploaded images (primary + room_images) per residence
 $galleryByRoom = [];
 foreach ($db->query("SELECT room_id, image FROM room_images ORDER BY room_id, id")->fetchAll() as $g) {
@@ -648,13 +651,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <a href="#location">Location</a>
             <a href="#report">Send a Report</a>
         </div>
+        <?php if ($footerRoomTypes): ?>
         <div class="footer-col">
             <h4>Residence Types</h4>
-            <a href="#rooms">Single Residence</a>
-            <a href="#rooms">Double Residence</a>
-            <a href="#rooms">Studio</a>
-            <a href="#rooms">Penthouse</a>
+            <?php foreach ($footerRoomTypes as $type): ?>
+            <a href="#rooms"><?= sanitize(ucfirst($type)) ?></a>
+            <?php endforeach; ?>
         </div>
+        <?php endif; ?>
         <div class="footer-col">
             <h4>Contact</h4>
             <a href="tel:0554016037"><i class='bx bx-phone'></i> 055 401 6037</a>
