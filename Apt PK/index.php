@@ -789,6 +789,14 @@ async function submitPublicReport(e) {
     const origText = btn.innerHTML;
     btn.innerHTML = '<i class="bx bx-loader-alt bx-spin"></i> Sending...';
     btn.disabled = true;
+    // This form can sit open a while as visitors browse rooms, so the
+    // original session may have expired by now — grab a fresh token
+    // right before submitting instead of risking a stale one.
+    try {
+        const csrfRes = await fetch('api/csrf_token.php');
+        const csrfData = await csrfRes.json();
+        if (csrfData && csrfData.csrf_token) form.set('csrf_token', csrfData.csrf_token);
+    } catch (csrfErr) { /* fall through with the original token */ }
     const res = await fetch('api/feedback.php', { method: 'POST', body: form });
     const data = await res.json();
     btn.innerHTML = origText;
@@ -841,6 +849,14 @@ async function submitBookingModal(e) {
     btn.innerHTML = '<i class="bx bx-loader-alt bx-spin"></i> Submitting...';
     btn.disabled = true;
     try {
+        // This form can sit open a while as visitors browse rooms, so the
+        // original session may have expired by now — grab a fresh token
+        // right before submitting instead of risking a stale one.
+        try {
+            const csrfRes = await fetch('api/csrf_token.php');
+            const csrfData = await csrfRes.json();
+            if (csrfData && csrfData.csrf_token) form.set('csrf_token', csrfData.csrf_token);
+        } catch (csrfErr) { /* fall through with the original token */ }
         const res = await fetch('api/bookings.php', { method: 'POST', body: form });
         const data = await res.json();
         btn.innerHTML = origText;

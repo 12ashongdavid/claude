@@ -20,7 +20,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $email = trim($_POST['email'] ?? '');
         $phone = trim($_POST['phone'] ?? '');
         $room_id = !empty($_POST['room_id']) ? intval($_POST['room_id']) : null;
-        $preferred_date = $_POST['preferred_date'] ?? null;
+        $preferred_date = !empty($_POST['preferred_date']) ? $_POST['preferred_date'] : null;
         $message = trim($_POST['message'] ?? '');
         $payment_type = $_POST['payment_type'] ?? 'none';
         $payment_method = $_POST['payment_method'] ?? 'paystack';
@@ -78,15 +78,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         try {
-            $stmt = $db->prepare("INSERT INTO booking_requests (full_name, email, phone, room_id, preferred_date, message, payment_type, payment_amount, payment_method, payment_reference, payment_status, verification_code) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-            $stmt->execute([$full_name, $email, $phone, $room_id, $preferred_date, $message, $payment_type, $payment_amount, $payment_method, $payment_reference, $payment_status, $verification_code]);
-        } catch (PDOException $e) {
-            $stmt = $db->prepare("INSERT INTO booking_requests (full_name, email, phone, room_id, preferred_date, message, payment_type, payment_amount, payment_method, payment_reference, payment_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-            $stmt->execute([$full_name, $email, $phone, $room_id, $preferred_date, $message, $payment_type, $payment_amount, $payment_method, $payment_reference, $payment_status]);
-            $newId = $db->lastInsertId();
-            if ($verification_code) {
-                try { $db->prepare("UPDATE booking_requests SET verification_code = ? WHERE id = ?")->execute([$verification_code, $newId]); } catch (PDOException $e2) {}
+            try {
+                $stmt = $db->prepare("INSERT INTO booking_requests (full_name, email, phone, room_id, preferred_date, message, payment_type, payment_amount, payment_method, payment_reference, payment_status, verification_code) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                $stmt->execute([$full_name, $email, $phone, $room_id, $preferred_date, $message, $payment_type, $payment_amount, $payment_method, $payment_reference, $payment_status, $verification_code]);
+            } catch (PDOException $e) {
+                // verification_code column may not exist yet on an un-migrated database
+                $stmt = $db->prepare("INSERT INTO booking_requests (full_name, email, phone, room_id, preferred_date, message, payment_type, payment_amount, payment_method, payment_reference, payment_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                $stmt->execute([$full_name, $email, $phone, $room_id, $preferred_date, $message, $payment_type, $payment_amount, $payment_method, $payment_reference, $payment_status]);
+                $newId = $db->lastInsertId();
+                if ($verification_code) {
+                    try { $db->prepare("UPDATE booking_requests SET verification_code = ? WHERE id = ?")->execute([$verification_code, $newId]); } catch (PDOException $e2) {}
+                }
             }
+        } catch (PDOException $e3) {
+            jsonOut(['error' => 'We could not submit your booking right now. Please try again in a moment.']);
+            exit;
         }
         $bookingId = $db->lastInsertId();
 
