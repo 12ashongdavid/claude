@@ -60,7 +60,7 @@ include __DIR__ . '/includes/header.php';
             <thead>
                 <tr>
                     <?php if ($isAdmin): ?><th>Tenant</th><?php endif; ?>
-                    <th>Room</th>
+                    <th>Residence</th>
                     <th>Bill Type</th>
                     <th>Amount</th>
                     <th>Billing Month</th>
