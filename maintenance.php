@@ -51,7 +51,7 @@ include __DIR__ . '/includes/header.php';
             <thead>
                 <tr>
                     <?php if ($isAdmin): ?><th>Tenant</th><?php endif; ?>
-                    <th>Room</th>
+                    <th>Residence</th>
                     <th>Category</th>
                     <th>Subject</th>
                     <th>Priority</th>
