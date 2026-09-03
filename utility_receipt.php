@@ -1,8 +1,5 @@
 <?php
-// =====================================================
-// Utility Bill Receipt
-// PK's Luxury Apartments — Apartment Management System
-// =====================================================
+// Renders a printable receipt for a paid utility bill.
 require_once __DIR__ . '/config/database.php';
 requireLogin();
 
@@ -144,7 +141,7 @@ if ($user['role'] === 'tenant' && $bill['tenant_id'] != $user['id']) {
         </div>
         <div class="receipt-row" style="border-bottom-color:#D4D6E5;">
             <span class="label">Room Number</span>
-            <span class="value"><?= sanitize($bill['room_number']) ?> (<?= ucfirst($bill['room_type']) ?>)</span>
+            <span class="value"><?= sanitize($bill['room_number']) ?> (<?= sanitize(ucfirst($bill['room_type'])) ?>)</span>
         </div>
         <div class="receipt-row" style="border-bottom:none;">
             <span class="label">Bill Type</span>

@@ -1,7 +1,4 @@
-// =====================================================
-// PK's Luxury Apartments — Main JavaScript
-// Apartment Management System
-// =====================================================
+// Shared front-end behavior for every page: theme toggle, modals, toasts, sidebar, and form validation.
 
 // ---- Theme Toggle (manipulates CSS via [data-theme]) ----
 function initTheme() {
@@ -237,7 +234,7 @@ function showToast(message, type = 'info') {
 
     toast.innerHTML = `
         <span style="font-size:1.2rem;">${icons[type] || icons.info}</span>
-        <span class="toast-msg">${message}</span>
+        <span class="toast-msg">${esc(message)}</span>
         <button class="toast-close" onclick="this.parentElement.remove()">&times;</button>
     `;
 

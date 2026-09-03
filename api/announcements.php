@@ -1,8 +1,5 @@
 <?php
-// =====================================================
-// API: Announcements
-// PK's Luxury Apartments — Apartment Management System
-// =====================================================
+// Handles announcements — admins/staff post them (site-wide or to one tenant), tenants see the ones meant for them.
 require_once __DIR__ . '/../config/database.php';
 requireLogin();
 
@@ -51,11 +48,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             $tenants = $db->query("SELECT id, full_name, phone FROM users WHERE role = 'tenant' AND is_active = 1")->fetchAll();
         }
+        $notifExcerpt = mb_substr($content, 0, 200) . (mb_strlen($content) > 200 ? '...' : '');
+        $smsExcerpt = mb_substr($content, 0, 140) . (mb_strlen($content) > 140 ? '...' : '');
         foreach ($tenants as $tenant) {
             $stmt = $db->prepare("INSERT INTO notifications (user_id, title, message, type, link) VALUES (?, 'Announcement', ?, 'announcement', 'announcements.php')");
-            $stmt->execute([$tenant['id'], "$title: " . mb_substr($content, 0, 200)]);
+            $stmt->execute([$tenant['id'], "$title: $notifExcerpt"]);
             if (!empty($tenant['phone'])) {
-                sendSMS($tenant['phone'], "ANNOUNCEMENT from PK's Luxury Apartments: $title. " . mb_substr($content, 0, 140));
+                sendSMS($tenant['phone'], "ANNOUNCEMENT from PK's Luxury Apartments: $title. $smsExcerpt");
             }
         }
 
@@ -95,9 +94,15 @@ $sql = "SELECT a.*, u.full_name AS author, t.full_name AS target_name
         FROM announcements a
         JOIN users u ON a.created_by = u.id
         LEFT JOIN users t ON a.target_tenant_id = t.id
-        ORDER BY a.created_at DESC";
+        WHERE 1=1";
+$params = [];
+if ($user['role'] === 'tenant') {
+    $sql .= " AND (a.target_tenant_id IS NULL OR a.target_tenant_id = ?)";
+    $params[] = $user['id'];
+}
+$sql .= " ORDER BY a.created_at DESC";
 $stmt = $db->prepare($sql);
-$stmt->execute();
+$stmt->execute($params);
 $announcements = $stmt->fetchAll();
 
 echo json_encode($announcements);

@@ -1,9 +1,7 @@
 <?php
-// =====================================================
-// Login Page
-// PK's Luxury Apartments — Apartment Management System
-// =====================================================
+// Login form and authentication handling.
 require_once __DIR__ . '/config/database.php';
+sendSecurityHeaders();
 
 if (isLoggedIn()) {
     header('Location: dashboard.php');
@@ -29,7 +27,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt->execute([$username]);
             $user = $stmt->fetch();
 
-            if ($user && password_verify($password, $user['password'])) {
+            $passwordOk = $user && password_verify($password, $user['password']);
+
+            if ($passwordOk && in_array($user['role'], ['admin', 'staff'], true) && isMobileUserAgent()) {
+                $error = 'The admin and staff dashboard is only available on a desktop or laptop computer. Please sign in from a PC.';
+            } elseif ($passwordOk) {
                 session_regenerate_id(true);
                 $_SESSION['user_id'] = $user['id'];
                 $_SESSION['user_role'] = $user['role'];

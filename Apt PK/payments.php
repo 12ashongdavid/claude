@@ -1,8 +1,5 @@
 <?php
-// =====================================================
-// Rent Payments Page
-// PK's Luxury Apartments — Apartment Management System
-// =====================================================
+// Lets a tenant pay rent online or view their history, and lets staff/admin record and review payments.
 require_once __DIR__ . '/config/database.php';
 $pageTitle = 'Rent Payments';
 requireLogin();
@@ -183,7 +180,7 @@ include __DIR__ . '/includes/header.php';
             <thead>
                 <tr>
                     <?php if ($isAdmin): ?><th>Tenant</th><?php endif; ?>
-                    <th>Room</th>
+                    <th>Residence</th>
                     <th>Amount</th>
                     <th>Date</th>
                     <th>Month Covered</th>

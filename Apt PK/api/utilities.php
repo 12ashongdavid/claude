@@ -1,7 +1,5 @@
 <?php
-// =====================================================
-// API: Utility Bills CRUD
-// =====================================================
+// Handles utility bills — creating them for a tenant and marking them paid.
 require_once __DIR__ . '/../config/database.php';
 requireLogin();
 
@@ -53,13 +51,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt = $db->prepare("INSERT INTO utility_bills (tenant_id, room_id, bill_type, amount, billing_month) VALUES (?, ?, ?, ?, ?)");
         $stmt->execute([$tenant_id, $room_id, $bill_type, $amount, $billing_month]);
 
-        // Notify tenant by SMS
+        // Notify tenant in-app and by SMS
         $stmt = $db->prepare("SELECT full_name, phone FROM users WHERE id = ?");
         $stmt->execute([$tenant_id]);
         $tenant = $stmt->fetch();
         if ($tenant) {
             $month_label = date('F Y', strtotime($billing_month . '-01'));
-            sendSMS($tenant['phone'], "Dear " . $tenant['full_name'] . ", your " . ucfirst($bill_type) . " bill of GH₵ " . number_format($amount, 2) . " for $month_label is now due. Please pay at the office. Thank you.");
+            $stmt = $db->prepare("INSERT INTO notifications (user_id, title, message, type, link) VALUES (?, 'Utility Bill Due', ?, 'utility', 'utilities.php')");
+            $stmt->execute([$tenant_id, "Your $bill_type bill of " . formatCurrency($amount) . " for $month_label is now due."]);
+            sendSMS($tenant['phone'], "Dear " . $tenant['full_name'] . ", your $bill_type bill of GH₵ " . number_format($amount, 2) . " for $month_label is now due. Please pay at the office. Thank you.");
         }
 
         echo json_encode(['success' => true, 'id' => $db->lastInsertId()]);
@@ -74,13 +74,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt = $db->prepare("UPDATE utility_bills SET status='paid', payment_date=?, payment_method=? WHERE id=?");
         $stmt->execute([$payment_date, $payment_method, $id]);
 
-        // Notify tenant by SMS
+        // Notify tenant in-app and by SMS
         $stmt = $db->prepare("SELECT ub.tenant_id, ub.bill_type, ub.amount, ub.billing_month, u.full_name, u.phone FROM utility_bills ub JOIN users u ON ub.tenant_id = u.id WHERE ub.id = ?");
         $stmt->execute([$id]);
         $bill = $stmt->fetch();
         if ($bill) {
             $month_label = date('F Y', strtotime($bill['billing_month'] . '-01'));
-            sendSMS($bill['phone'], "Dear " . $bill['full_name'] . ", your " . ucfirst($bill['bill_type']) . " bill of GH₵ " . number_format($bill['amount'], 2) . " for $month_label has been marked as paid. Thank you!");
+            $stmt = $db->prepare("INSERT INTO notifications (user_id, title, message, type, link) VALUES (?, 'Utility Bill Paid', ?, 'utility', 'utilities.php')");
+            $stmt->execute([$bill['tenant_id'], "Your " . $bill['bill_type'] . " bill of " . formatCurrency($bill['amount']) . " for $month_label has been marked as paid."]);
+            sendSMS($bill['phone'], "Dear " . $bill['full_name'] . ", your " . $bill['bill_type'] . " bill of GH₵ " . number_format($bill['amount'], 2) . " for $month_label has been marked as paid. Thank you!");
         }
 
         echo json_encode(['success' => true]);
@@ -89,7 +91,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // GET: List utility bills
-$tenant_filter = $_GET['tenant_id'] ?? '';
+if (!in_array($user['role'], ['admin', 'staff'])) {
+    $tenant_filter = $user['id'];
+} else {
+    $tenant_filter = $_GET['tenant_id'] ?? '';
+}
 $month = $_GET['billing_month'] ?? '';
 $status = $_GET['status'] ?? '';
 

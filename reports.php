@@ -1,8 +1,5 @@
 <?php
-// =====================================================
-// Reports Page
-// PK's Luxury Apartments — Apartment Management System
-// =====================================================
+// Reports dashboard for admin/staff — revenue, occupancy, and maintenance stats, plus a date-range report.
 require_once __DIR__ . '/config/database.php';
 $pageTitle = 'Reports';
 requireRole(['admin', 'staff']);
@@ -105,7 +102,7 @@ include __DIR__ . '/includes/header.php';
         ?>
         <div style="margin-bottom:16px;">
             <div style="display:flex;justify-content:space-between;margin-bottom:4px;font-size:0.88rem;">
-                <span style="text-transform:capitalize;font-weight:600;"><?= $rb['room_type'] ?></span>
+                <span style="text-transform:capitalize;font-weight:600;"><?= sanitize($rb['room_type']) ?></span>
                 <span class="text-muted"><?= $rb['occupied'] ?>/<?= $rb['count'] ?> occupied</span>
             </div>
             <div class="progress-bar">
@@ -123,7 +120,7 @@ include __DIR__ . '/includes/header.php';
         </div>
         <?php foreach ($maintBreakdown as $mb): ?>
         <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border-light);font-size:0.88rem;">
-            <span style="text-transform:capitalize;"><?= str_replace('_', ' ', $mb['category']) ?></span>
+            <span style="text-transform:capitalize;"><?= sanitize(str_replace('_', ' ', $mb['category'])) ?></span>
             <span style="font-weight:600;"><?= $mb['count'] ?></span>
         </div>
         <?php endforeach; ?>

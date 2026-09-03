@@ -1,5 +1,5 @@
 -- =====================================================
--- Run ALL missing migrations 013–015 at once
+-- Run ALL missing migrations 013–016 at once
 -- phpMyAdmin → pk_ams database → SQL tab → paste → Go
 --
 -- NOTE: If you see "Duplicate column name" errors for
@@ -38,3 +38,7 @@ CREATE TABLE IF NOT EXISTS feedback_reports (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
     FOREIGN KEY (admin_reply_by) REFERENCES users(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 016: Add verification_code to booking_requests
+ALTER TABLE booking_requests
+    ADD COLUMN verification_code VARCHAR(6) DEFAULT NULL AFTER payment_status;

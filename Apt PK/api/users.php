@@ -1,7 +1,5 @@
 <?php
-// =====================================================
-// API: Users (Tenants list, Profile update)
-// =====================================================
+// Handles user accounts — profile updates, plus admin/staff management of tenants and staff.
 require_once __DIR__ . '/../config/database.php';
 requireLogin();
 
@@ -31,8 +29,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             echo json_encode(['error' => 'Phone number must contain exactly 10 digits (numbers only).']);
             exit;
         }
-        if (!empty($email) && !validateEmail($email)) {
-            echo json_encode(['error' => 'Please enter a valid email address.']);
+        if (empty($email)) {
+            echo json_encode(['error' => 'Email address is required.']);
+            exit;
+        }
+        $emailCheck = validateEmailDetailed($email);
+        if (!$emailCheck['valid']) {
+            echo json_encode(['error' => $emailCheck['message']]);
             exit;
         }
         if (!empty($date_of_birth) && !validateAge($date_of_birth)) {
@@ -78,7 +81,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 echo json_encode(['error' => $uploadError]);
                 exit;
             }
-            $ext = pathinfo($_FILES['profile_picture']['name'], PATHINFO_EXTENSION);
+            $finfo = new finfo(FILEINFO_MIME_TYPE);
+            $ext = safeUploadExtension($finfo->file($_FILES['profile_picture']['tmp_name']));
             $filename = 'user_' . $user['id'] . '_' . time() . '.' . $ext;
             $dest = UPLOAD_PATH . 'profiles/' . $filename;
             if (move_uploaded_file($_FILES['profile_picture']['tmp_name'], $dest)) {
@@ -112,16 +116,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $monthly_rent = floatval($_POST['monthly_rent'] ?? 0);
         $date_of_birth = $_POST['date_of_birth'] ?? null;
 
-        if (empty($full_name) || empty($username) || empty($phone)) {
-            echo json_encode(['error' => 'Name, username, and phone are required.']);
+        if (empty($full_name) || empty($username) || empty($phone) || empty($email)) {
+            echo json_encode(['error' => 'Name, username, phone, and email are required.']);
             exit;
         }
         if (!validatePhone($phone)) {
             echo json_encode(['error' => 'Phone number must contain exactly 10 digits (numbers only).']);
             exit;
         }
-        if (!empty($email) && !validateEmail($email)) {
-            echo json_encode(['error' => 'Please enter a valid email address.']);
+        $emailCheck = validateEmailDetailed($email);
+        if (!$emailCheck['valid']) {
+            echo json_encode(['error' => $emailCheck['message']]);
             exit;
         }
         if (!validateStartDate($start_date)) {
@@ -195,16 +200,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $email = trim($_POST['email'] ?? '');
         $phone = trim($_POST['phone'] ?? '');
 
-        if (empty($full_name) || empty($username) || empty($phone)) {
-            echo json_encode(['error' => 'Name, username, and phone are required.']);
+        if (empty($full_name) || empty($username) || empty($phone) || empty($email)) {
+            echo json_encode(['error' => 'Name, username, phone, and email are required.']);
             exit;
         }
         if (!validatePhone($phone)) {
             echo json_encode(['error' => 'Phone number must contain exactly 10 digits (numbers only).']);
             exit;
         }
-        if (!empty($email) && !validateEmail($email)) {
-            echo json_encode(['error' => 'Please enter a valid email address.']);
+        $emailCheck = validateEmailDetailed($email);
+        if (!$emailCheck['valid']) {
+            echo json_encode(['error' => $emailCheck['message']]);
             exit;
         }
 
@@ -281,12 +287,48 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         $stmt = $db->prepare("UPDATE users SET is_active = ? WHERE id = ?");
         $stmt->execute([$action === 'deactivate_user' ? 0 : 1, $id]);
+
+        if ($action === 'deactivate_user' && $targetRole === 'tenant') {
+            // End any active tenancy and free up their residence
+            $roomIds = $db->prepare("SELECT room_id FROM tenancies WHERE tenant_id = ? AND status = 'active'");
+            $roomIds->execute([$id]);
+            $freedRooms = $roomIds->fetchAll(PDO::FETCH_COLUMN);
+
+            $db->prepare("UPDATE tenancies SET status = 'terminated', end_date = CURDATE() WHERE tenant_id = ? AND status = 'active'")->execute([$id]);
+
+            if ($freedRooms) {
+                $placeholders = implode(',', array_fill(0, count($freedRooms), '?'));
+                $db->prepare("UPDATE rooms SET status = 'available' WHERE id IN ($placeholders) AND status = 'occupied'")->execute($freedRooms);
+            }
+
+            $stmt = $db->prepare("SELECT full_name, phone FROM users WHERE id = ?");
+            $stmt->execute([$id]);
+            $target = $stmt->fetch();
+            if ($target) {
+                $db->prepare("INSERT INTO notifications (user_id, title, message, type) VALUES (?, 'Account Deactivated', 'Your account has been deactivated. Please contact management for details.', 'warning')")->execute([$id]);
+                sendSMS($target['phone'], "Dear " . $target['full_name'] . ", your PK's Luxury Apartments account has been deactivated. Please contact management for details.");
+            }
+        } elseif ($action === 'activate_user') {
+            $stmt = $db->prepare("SELECT full_name, phone FROM users WHERE id = ?");
+            $stmt->execute([$id]);
+            $target = $stmt->fetch();
+            if ($target) {
+                $db->prepare("INSERT INTO notifications (user_id, title, message, type) VALUES (?, 'Account Reactivated', 'Your account has been reactivated. You may now log in.', 'success')")->execute([$id]);
+                sendSMS($target['phone'], "Dear " . $target['full_name'] . ", your PK's Luxury Apartments account has been reactivated. You may now log in.");
+            }
+        }
+
         echo json_encode(['success' => true]);
         exit;
     }
 }
 
 // GET: List users/tenants
+if (!in_array($user['role'], ['admin', 'staff'])) {
+    http_response_code(403);
+    echo json_encode(['error' => 'Forbidden']);
+    exit;
+}
 $role = $_GET['role'] ?? '';
 $search = $_GET['search'] ?? '';
 

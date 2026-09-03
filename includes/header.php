@@ -1,8 +1,5 @@
 <?php
-// =====================================================
-// Includes: Header
-// PK's Luxury Apartments — Apartment Management System
-// =====================================================
+// Shared page chrome: sidebar nav, top bar, and notifications — included at the top of every logged-in page.
 require_once __DIR__ . '/../config/database.php';
 sendSecurityHeaders();
 $user = currentUser();
@@ -149,7 +146,7 @@ if ($user) {
                     </div>
                 </div>
                 <div class="topbar-user" onclick="location.href='profile.php'">
-                    <img src="<?= SITE_URL ?>/uploads/profiles/<?= $user['profile_picture'] ?>" alt="Profile" loading="lazy" onerror="this.src='https://ui-avatars.com/api/?name=<?= urlencode($user['full_name']) ?>&background=47433E&color=fff'">
+                    <img src="<?= SITE_URL ?>/uploads/profiles/<?= sanitize($user['profile_picture']) ?>" alt="Profile" loading="lazy" onerror="this.src='https://ui-avatars.com/api/?name=<?= urlencode($user['full_name']) ?>&background=47433E&color=fff'">
                     <span><?= sanitize($user['full_name']) ?></span>
                 </div>
             </div>

@@ -1,8 +1,5 @@
 <?php
-// =====================================================
-// Announcements Page
-// PK's Luxury Apartments — Apartment Management System
-// =====================================================
+// Announcements board — staff/admin post notices here, tenants come here to read them.
 require_once __DIR__ . '/config/database.php';
 $pageTitle = 'Announcements';
 requireLogin();

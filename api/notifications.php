@@ -1,7 +1,5 @@
 <?php
-// =====================================================
-// API: Handle Notifications (mark read, delete)
-// =====================================================
+// Lets a user mark their notifications read or delete them, and reports how many are unread.
 require_once __DIR__ . '/../config/database.php';
 requireLogin();
 

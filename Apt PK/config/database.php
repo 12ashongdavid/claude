@@ -1,8 +1,5 @@
 <?php
-// =====================================================
-// Database Configuration
-// PK's Luxury Apartments — Apartment Management System
-// =====================================================
+// Database connection, session setup, and the shared helper functions used everywhere else.
 
 define('DB_HOST', 'localhost');
 define('DB_NAME', 'pk_ams');
@@ -30,16 +27,12 @@ if (!defined('SITE_URL')) {
 
 define('UPLOAD_PATH', __DIR__ . '/../uploads/');
 
-// =====================================================
-// mNotify SMS Configuration
-// =====================================================
+// mNotify SMS settings
 define('MNOTIFY_API_KEY', 'WmR0TbwuaoDoDJmwm38qhysfz');
 define('MNOTIFY_SENDER_ID', 'PkluxuryAPT');
 define('MNOTIFY_ENDPOINT', 'https://api.mnotify.com/api/sms/quick');
 
-// =====================================================
-// Paystack Configuration (Test keys)
-// =====================================================
+// Paystack settings (currently pointed at test keys)
 define('PAYSTACK_SECRET_KEY', 'sk_test_98b041aab15fb78624406cd3d0d56930f8e7642a');
 define('PAYSTACK_PUBLIC_KEY', 'pk_test_37e1ef9de3ebdaa9ab1439031ecf4b6fb2a21f4f');
 define('PAYSTACK_API', 'https://api.paystack.co');
@@ -181,6 +174,14 @@ function isLoggedIn() {
     return isset($_SESSION['user_id']);
 }
 
+// Admin/staff dashboard is desktop-only — phones and tablets are turned away.
+// UA sniffing isn't spoof-proof, but this is a UX guardrail, not a security boundary.
+function isMobileUserAgent() {
+    $ua = $_SERVER['HTTP_USER_AGENT'] ?? '';
+    if ($ua === '') return false;
+    return (bool) preg_match('/Mobi|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Windows Phone|webOS/i', $ua);
+}
+
 // Require login
 function requireLogin() {
     if (!isLoggedIn()) {
@@ -188,11 +189,24 @@ function requireLogin() {
         header('Location: login.php');
         exit;
     }
+    $u = currentUser();
+    if (!$u) {
+        // Session refers to an account that no longer exists or was deactivated
+        unset($_SESSION['user_id'], $_SESSION['user_role']);
+        setFlash('error', 'Your account is no longer active. Please contact management.');
+        header('Location: login.php');
+        exit;
+    }
+    if (in_array($u['role'], ['admin', 'staff'], true) && isMobileUserAgent()) {
+        unset($_SESSION['user_id'], $_SESSION['user_role']);
+        setFlash('error', 'The admin and staff dashboard is only available on a desktop or laptop computer. Please sign in from a PC.');
+        header('Location: login.php');
+        exit;
+    }
     // Force temporary-password users to set a new password first (page views only, not API calls)
     $isApi = strpos($_SERVER['SCRIPT_NAME'] ?? '', '/api/') !== false;
     if (!$isApi && basename($_SERVER['PHP_SELF']) !== 'profile.php') {
-        $u = currentUser();
-        if ($u && (int)$u['must_change_password'] === 1) {
+        if ((int)$u['must_change_password'] === 1) {
             setFlash('warning', 'You are using a temporary password. Please change it now.');
             header('Location: profile.php');
             exit;
@@ -221,32 +235,69 @@ function validatePhone($phone) {
     return strlen($phone) === 10;
 }
 
-// Validate email (strict IT standards)
-function validateEmail($email) {
-    if (empty($email)) {
+// The webmail providers we accept outright, plus Ghanaian school/government
+// domains recognized by suffix — new institutions register under these
+// endings all the time, so listing every one by name would go stale fast.
+function getAcceptedEmailDomains() {
+    return ['gmail.com', 'yahoo.com', 'outlook.com', 'hotmail.com', 'icloud.com', 'aol.com', 'protonmail.com'];
+}
+
+function getAcceptedEmailDomainSuffixes() {
+    return ['.edu.gh', '.ac.gh', '.gov.gh'];
+}
+
+function isAcceptedEmailDomain($domain) {
+    $domain = strtolower($domain);
+    if (in_array($domain, getAcceptedEmailDomains(), true)) {
         return true;
     }
+    foreach (getAcceptedEmailDomainSuffixes() as $suffix) {
+        if (substr($domain, -strlen($suffix)) === $suffix) {
+            return true;
+        }
+    }
+    return false;
+}
+
+// The one place every email address in the app gets checked. Walks through
+// the checks in order and stops at the first thing wrong, so the message
+// always explains the actual problem instead of a generic "invalid email".
+// An empty value is treated as valid here — whether email is required at
+// all is a decision for the caller, not this function.
+function validateEmailDetailed($email, $skipWhitelist = false) {
+    $email = strtolower(trim($email));
+    if ($email === '') {
+        return ['valid' => true, 'message' => ''];
+    }
     if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-        return false;
+        return ['valid' => false, 'message' => 'Please enter a valid email address (e.g. name@example.com).'];
     }
     $parts = explode('@', $email);
     if (count($parts) !== 2) {
-        return false;
+        return ['valid' => false, 'message' => 'Please enter a valid email address (e.g. name@example.com).'];
     }
-    $local = $parts[0];
-    $domain = $parts[1];
+    [$local, $domain] = $parts;
+    if (strpos($local, '..') !== false || strpos($domain, '..') !== false) {
+        return ['valid' => false, 'message' => 'Email addresses can\'t contain two dots in a row.'];
+    }
     if (strlen($local) > 64 || strlen($domain) > 255) {
-        return false;
-    }
-    if (preg_match('/\.\./', $local) || preg_match('/\.\./', $domain)) {
-        return false;
+        return ['valid' => false, 'message' => 'That email address is too long.'];
     }
     $domainParts = explode('.', $domain);
     $tld = end($domainParts);
     if (strlen($tld) < 2 || strlen($tld) > 10) {
-        return false;
+        return ['valid' => false, 'message' => 'That email address has an invalid ending (e.g. .com, .org).'];
     }
-    return true;
+    if (!$skipWhitelist && !isAcceptedEmailDomain($domain)) {
+        return ['valid' => false, 'message' => 'Please use an accepted email provider (Gmail, Yahoo, Outlook, Hotmail, iCloud, AOL, ProtonMail, or a Ghanaian school/government address).'];
+    }
+    return ['valid' => true, 'message' => ''];
+}
+
+// Simple pass/fail wrapper around validateEmailDetailed() for callers that
+// don't need the explanation, just a yes or no.
+function validateEmail($email, $skipWhitelist = false) {
+    return validateEmailDetailed($email, $skipWhitelist)['valid'];
 }
 
 // Validate that a start date is not more than 1 month in the past
@@ -357,7 +408,7 @@ function getTenantPaidThroughRange($tenantId) {
     if (!$row || !$row['first_month']) return null;
     $from = date('M Y', strtotime($row['first_month'] . '-01'));
     $to = date('M Y', strtotime($row['last_month'] . '-01'));
-    return $from === $to ? $from : "$from — $to";
+    return $from === $to ? $from : "$from to $to";
 }
 
 // CSRF token generation
@@ -443,6 +494,24 @@ function validateAgreementUpload($file, $maxSize = 10485760) {
     return null;
 }
 
+// Map a validated upload MIME type to a fixed, safe file extension.
+// Never derive the saved extension from the client-supplied filename —
+// it's attacker-controlled and, combined with a content/MIME-matching
+// polyglot file, can turn an "image upload" into a way to drop a file
+// with an executable extension.
+function safeUploadExtension($mime) {
+    $map = [
+        'image/jpeg' => 'jpg',
+        'image/png' => 'png',
+        'image/gif' => 'gif',
+        'image/webp' => 'webp',
+        'application/pdf' => 'pdf',
+        'application/msword' => 'doc',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document' => 'docx',
+    ];
+    return $map[$mime] ?? 'bin';
+}
+
 // Send SMS via mNotify (best-effort, never blocks the request)
 function sendSMS($phone, $message, $sender = MNOTIFY_SENDER_ID) {
     $phone = preg_replace('/[^0-9]/', '', $phone);
@@ -450,10 +519,21 @@ function sendSMS($phone, $message, $sender = MNOTIFY_SENDER_ID) {
         return false;
     }
 
+    // mNotify concatenates long messages into multiple segments and
+    // reassembles them on the recipient's phone, so 160 chars (one GSM-7
+    // segment) is not a hard limit — several of our own messages (account
+    // creation with credentials, the booking verification code) routinely
+    // run past it. Cap generously instead of truncating real content.
+    $maxLen = 918;
+    $sendable = mb_substr($message, 0, $maxLen);
+    if (mb_strlen($message) > $maxLen) {
+        $sendable = mb_substr($sendable, 0, $maxLen - 3) . '...';
+    }
+
     $payload = json_encode([
         'recipient' => [$phone],
         'sender' => $sender,
-        'message' => mb_substr($message, 0, 160),
+        'message' => $sendable,
         'is_schedule' => false,
         'schedule_date' => '',
     ]);

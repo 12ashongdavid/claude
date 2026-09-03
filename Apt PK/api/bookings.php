@@ -1,7 +1,5 @@
 <?php
-// =====================================================
-// API: Bookings (Prospective Tenants) — with payment support
-// =====================================================
+// Handles booking requests from prospective tenants, including the optional deposit or full payment.
 require_once __DIR__ . '/../config/database.php';
 
 header('Content-Type: application/json');
@@ -20,21 +18,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $email = trim($_POST['email'] ?? '');
         $phone = trim($_POST['phone'] ?? '');
         $room_id = !empty($_POST['room_id']) ? intval($_POST['room_id']) : null;
-        $preferred_date = $_POST['preferred_date'] ?? null;
+        $preferred_date = !empty($_POST['preferred_date']) ? $_POST['preferred_date'] : null;
         $message = trim($_POST['message'] ?? '');
         $payment_type = $_POST['payment_type'] ?? 'none';
         $payment_method = $_POST['payment_method'] ?? 'paystack';
 
-        if (empty($full_name) || empty($phone)) {
-            echo json_encode(['error' => 'Name and phone are required.']);
+        if (empty($full_name) || empty($phone) || empty($email)) {
+            echo json_encode(['error' => 'Name, phone, and email are required.']);
             exit;
         }
         if (!validatePhone($phone)) {
             echo json_encode(['error' => 'Phone number must be exactly 10 digits.']);
             exit;
         }
-        if (!empty($email) && !validateEmail($email)) {
-            echo json_encode(['error' => 'Please enter a valid email address.']);
+        $emailCheck = validateEmailDetailed($email);
+        if (!$emailCheck['valid']) {
+            echo json_encode(['error' => $emailCheck['message']]);
+            exit;
+        }
+        if ($preferred_date && $preferred_date < date('Y-m-d')) {
+            echo json_encode(['error' => "Your preferred view-in date can't be in the past. Please choose today or a later date."]);
             exit;
         }
 
@@ -61,13 +64,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($payment_type !== 'none' && !empty($payment_reference)) {
             $payment_status = 'completed';
         } elseif ($payment_type !== 'none' && $payment_method === 'bank_transfer') {
-            $payment_status = 'pending_verification';
+            $payment_status = 'pending';
         } elseif ($payment_type !== 'none' && $payment_method === 'cash') {
-            $payment_status = 'pending_verification';
+            $payment_status = 'pending';
         }
 
-        $stmt = $db->prepare("INSERT INTO booking_requests (full_name, email, phone, room_id, preferred_date, message, payment_type, payment_amount, payment_method, payment_reference, payment_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-        $stmt->execute([$full_name, $email, $phone, $room_id, $preferred_date, $message, $payment_type, $payment_amount, $payment_method, $payment_reference, $payment_status]);
+        try {
+            $stmt = $db->prepare("INSERT INTO booking_requests (full_name, email, phone, room_id, preferred_date, message, payment_type, payment_amount, payment_method, payment_reference, payment_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            $stmt->execute([$full_name, $email, $phone, $room_id, $preferred_date, $message, $payment_type, $payment_amount, $payment_method, $payment_reference, $payment_status]);
+        } catch (PDOException $e) {
+            echo json_encode(['error' => 'We could not submit your booking right now. Please try again in a moment.']);
+            exit;
+        }
         $bookingId = $db->lastInsertId();
 
         // Mark residence as occupied when a booking with payment is made
@@ -92,7 +100,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             $db->prepare($notifSql)->execute($notifParams);
             // SMS to first admin only (non-blocking)
-            sendSMS($admins[0]['phone'], "New booking request from $full_name$room_label. Phone: $phone$payment_note");
+            sendSMS($admins[0]['phone'], "New booking request from $full_name$room_label. Phone: $phone." . $payment_note);
         }
 
         sendSMS($phone, "Dear $full_name, your booking request has been received" . ($payment_type !== 'none' ? " with a payment of " . formatCurrency($payment_amount) : "") . ". PK's Luxury Apartments will contact you within 24 hours.");
@@ -200,10 +208,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         $id = intval($_POST['id'] ?? 0);
-        $reference = trim($_POST['payment_reference'] ?? 'ADMIN-' . strtoupper(bin2hex(random_bytes(4))));
+        $refInput = trim($_POST['payment_reference'] ?? '');
+        $reference = $refInput !== '' ? $refInput : 'ADMIN-' . strtoupper(bin2hex(random_bytes(4)));
 
         $stmt = $db->prepare("UPDATE booking_requests SET payment_status = 'completed', payment_reference = ? WHERE id = ?");
         $stmt->execute([$reference, $id]);
+
+        $stmt = $db->prepare("SELECT full_name, phone FROM booking_requests WHERE id = ?");
+        $stmt->execute([$id]);
+        $req = $stmt->fetch();
+        if ($req) {
+            sendSMS($req['phone'], "Dear " . $req['full_name'] . ", your booking payment has been confirmed. Thank you for choosing PK's Luxury Apartments.");
+        }
 
         echo json_encode(['success' => true]);
         exit;
@@ -220,6 +236,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $id = intval($_POST['id'] ?? 0);
         $stmt = $db->prepare("UPDATE booking_requests SET payment_status = 'failed' WHERE id = ?");
         $stmt->execute([$id]);
+
+        $stmt = $db->prepare("SELECT full_name, phone FROM booking_requests WHERE id = ?");
+        $stmt->execute([$id]);
+        $req = $stmt->fetch();
+        if ($req) {
+            sendSMS($req['phone'], "Dear " . $req['full_name'] . ", we could not confirm your booking payment. Please contact PK's Luxury Apartments for assistance.");
+        }
 
         echo json_encode(['success' => true]);
         exit;

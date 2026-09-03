@@ -25,6 +25,7 @@
 </div>
 
 <script src="<?= SITE_URL ?>/js/app.js?v=18"></script>
+<script src="<?= SITE_URL ?>/js/email-validator.js?v=1"></script>
 <?php if (isset($extraScripts)): ?>
     <?= $extraScripts ?>
 <?php endif; ?>

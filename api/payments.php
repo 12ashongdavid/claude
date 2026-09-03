@@ -1,7 +1,5 @@
 <?php
-// =====================================================
-// API: Payments CRUD
-// =====================================================
+// Records rent payments taken in person and lists payment history.
 require_once __DIR__ . '/../config/database.php';
 requireLogin();
 
@@ -56,17 +54,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt->execute([$tenant_id, $room_id, $amount, $payment_date, $payment_method, $ref, $month_covered, $user['id'], $notes]);
 
         $payment_id = $db->lastInsertId();
+        $monthLabel = date('F Y', strtotime($month_covered . '-01'));
 
         // Create notification for tenant
         $stmt = $db->prepare("INSERT INTO notifications (user_id, title, message, type) VALUES (?, 'Payment Received', ?, 'payment')");
-        $stmt->execute([$tenant_id, "Your rent payment of " . formatCurrency($amount) . " for $month_covered has been recorded. Ref: $ref"]);
+        $stmt->execute([$tenant_id, "Your rent payment of " . formatCurrency($amount) . " for $monthLabel has been recorded. Ref: $ref"]);
 
         // Send SMS confirmation to tenant
         $stmt = $db->prepare("SELECT full_name, phone FROM users WHERE id = ?");
         $stmt->execute([$tenant_id]);
         $tenant = $stmt->fetch();
         if ($tenant) {
-            sendSMS($tenant['phone'], "Dear " . $tenant['full_name'] . ", your rent payment of GH₵ " . number_format($amount, 2) . " for $month_covered has been received. Ref: $ref. Thank you!");
+            sendSMS($tenant['phone'], "Dear " . $tenant['full_name'] . ", your rent payment of GH₵ " . number_format($amount, 2) . " for $monthLabel has been received. Ref: $ref. Thank you!");
         }
 
         echo json_encode(['success' => true, 'id' => $payment_id, 'reference' => $ref]);
@@ -75,7 +74,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // GET: List payments
-$tenant_filter = $_GET['tenant_id'] ?? '';
+if (!in_array($user['role'], ['admin', 'staff'])) {
+    $tenant_filter = $user['id'];
+} else {
+    $tenant_filter = $_GET['tenant_id'] ?? '';
+}
 $date_from = $_GET['date_from'] ?? '';
 $date_to = $_GET['date_to'] ?? '';
 $search = $_GET['search'] ?? '';

@@ -1,20 +1,16 @@
 <?php
-// =====================================================
-// Cron: Rent Due Reminders
-// PK's Luxury Apartments — Apartment Management System
+// Sends rent-due reminders for every active tenancy.
 //
-// For every active tenancy, finds the latest covered rent
-// month (max month_covered among completed rent payments).
-// Starting one month before that covered period expires and
-// ending on its last day, sends up to 4 weekly reminders
+// For each tenancy, finds the latest covered rent month (max month_covered
+// among completed rent payments). Starting one month before that covered
+// period expires and ending on its last day, sends up to 4 weekly reminders
 // (SMS + in-app notification) to the tenant and to all admins.
 //
-// Idempotent: each tenant / covered month / week is sent once
-// (tracked in rent_reminder_log).
+// Idempotent: each tenant / covered month / week combo only goes out once,
+// tracked in rent_reminder_log.
 //
 // Run daily via Windows Task Scheduler:
 //   "C:\xampp1\php\php.exe" "C:\xampp1\htdocs\Apt PK\cron\rent_reminders.php"
-// =====================================================
 
 // CLI only (prevents direct web access)
 if (php_sapi_name() !== 'cli') {
@@ -54,7 +50,7 @@ foreach ($tenancies as $t) {
 
     // The covered period expires on the LAST day of the covered month
     $expiry = date('Y-m-t', strtotime($covered . '-01'));
-    $windowStart = date('Y-m-d', strtotime('-1 month', strtotime($expiry)));
+    $windowStart = $covered . '-01';
 
     if ($today < $windowStart) {
         continue; // too early — reminder starts one month before expiry
@@ -81,7 +77,7 @@ foreach ($tenancies as $t) {
     // Tenant — in-app + SMS
     $tenantMsg = "Friendly reminder: your rent covering $monthLabel ends on $expiryLabel. Please pay before then to avoid interruption. — " . SITE_NAME;
     $insNotifTenant->execute([$t['tenant_id'], $tenantMsg]);
-    sendSMS($t['phone'], "Dear " . $t['full_name'] . ", " . $tenantMsg);
+    sendSMS($t['phone'], "Dear " . $t['full_name'] . ", this is a friendly reminder that your rent covering $monthLabel ends on $expiryLabel. Please pay before then to avoid interruption. — " . SITE_NAME);
 
     // Admins — in-app + SMS
     $adminMsg = "Rent due reminder: " . $t['full_name'] . " (Room " . $t['room_number'] . ") — $monthLabel ends $expiryLabel. Weekly reminder $week/4.";

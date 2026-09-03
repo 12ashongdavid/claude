@@ -1,8 +1,5 @@
 <?php
-// =====================================================
-// Rooms Management Page (with image uploads)
-// PK's Luxury Apartments — Apartment Management System
-// =====================================================
+// Lets admin/staff add, edit, and delete residences and their photos, and manage residence types.
 require_once __DIR__ . '/config/database.php';
 $pageTitle = 'Residence';
 requireRole(['admin', 'staff']);
@@ -238,7 +235,7 @@ function wirePriceLabels() {
     const apply = (sel, lbl, suffix) => {
         if (!sel || !lbl) return;
         const t = roomTypes.find(x => x.name === sel.value);
-        lbl.textContent = (t && t.charge_period === 'daily' ? 'Daily' : 'Monthly') + ' Rental Price (GH&#8373;)' + suffix;
+        lbl.textContent = (t && t.charge_period === 'daily' ? 'Daily' : 'Monthly') + ' Rental Price (GH₵)' + suffix;
     };
     if (addSel) addSel.addEventListener('change', () => apply(addSel, addLbl, ' *'));
     if (editSel) editSel.addEventListener('change', () => apply(editSel, editLbl, ''));

@@ -1,8 +1,5 @@
 <?php
-// =====================================================
-// Paystack Helper — shared by api/paystack.php and webhook
-// PK's Luxury Apartments — Apartment Management System
-// =====================================================
+// Paystack API calls and payment recording, shared by api/paystack.php and the webhook.
 
 // Low-level Paystack API call (best-effort cURL)
 function paystackApiCall($method, $endpoint, $payload = null) {
@@ -121,7 +118,9 @@ function paystackRecordPayment($reference) {
         $stmt = $db->prepare("INSERT INTO paystack_transactions (reference, pay_type, tenant_id, amount, month_covered) VALUES (?, 'rent', ?, ?, ?)");
         $stmt->execute([$reference, $tenantId, $amount, $month]);
 
-        $monthLabel = $months > 1 ? $month . ' to ' . $endMonth . ' (' . $months . ' months)' : $month;
+        $monthLabel = $months > 1
+            ? date('F Y', strtotime($month . '-01')) . ' to ' . date('F Y', strtotime($endMonth . '-01')) . ' (' . $months . ' months)'
+            : date('F Y', strtotime($month . '-01'));
 
         $stmt = $db->prepare("SELECT full_name, phone FROM users WHERE id = ?");
         $stmt->execute([$tenantId]);
@@ -153,13 +152,14 @@ function paystackRecordPayment($reference) {
         $stmt = $db->prepare("INSERT INTO paystack_transactions (reference, pay_type, tenant_id, amount, bill_id) VALUES (?, 'utility', ?, ?, ?)");
         $stmt->execute([$reference, $tenantId, $amount, $billId]);
 
+        $billMonthLabel = date('F Y', strtotime($bill['billing_month'] . '-01'));
         $stmt = $db->prepare("SELECT full_name, phone FROM users WHERE id = ?");
         $stmt->execute([$tenantId]);
         $tenant = $stmt->fetch();
         if ($tenant) {
             $stmt = $db->prepare("INSERT INTO notifications (user_id, title, message, type) VALUES (?, 'Utility Bill Paid', ?, 'utility')");
-            $stmt->execute([$tenantId, "Your " . $bill['bill_type'] . " bill of " . formatCurrency($amount) . " for " . $bill['billing_month'] . " has been paid via $methodLabel. Ref: $reference"]);
-            sendSMS($tenant['phone'], "Dear " . $tenant['full_name'] . ", your " . $bill['bill_type'] . " bill of GH₵ " . number_format($amount, 2) . " for " . $bill['billing_month'] . " has been paid via $methodLabel. Ref: $reference. Thank you!");
+            $stmt->execute([$tenantId, "Your " . $bill['bill_type'] . " bill of " . formatCurrency($amount) . " for $billMonthLabel has been paid via $methodLabel. Ref: $reference"]);
+            sendSMS($tenant['phone'], "Dear " . $tenant['full_name'] . ", your " . $bill['bill_type'] . " bill of GH₵ " . number_format($amount, 2) . " for $billMonthLabel has been paid via $methodLabel. Ref: $reference. Thank you!");
         }
 
         return ['status' => 'recorded', 'kind' => 'utility', 'id' => $billId];
@@ -172,6 +172,9 @@ function paystackRecordPayment($reference) {
         $booking = $stmt->fetch();
         if (!$booking) {
             return ['status' => 'failed', 'message' => 'Booking request not found.'];
+        }
+        if ($booking['payment_status'] === 'completed') {
+            return ['status' => 'duplicate', 'kind' => 'booking'];
         }
 
         $stmt = $db->prepare("UPDATE booking_requests SET payment_status = 'completed', payment_reference = ? WHERE id = ?");

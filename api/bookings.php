@@ -1,7 +1,5 @@
 <?php
-// =====================================================
-// API: Bookings (Prospective Tenants) — with payment support
-// =====================================================
+// Handles booking requests from prospective tenants, including the optional deposit payment.
 ob_start();
 require_once __DIR__ . '/../config/database.php';
 
@@ -22,21 +20,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $email = trim($_POST['email'] ?? '');
         $phone = trim($_POST['phone'] ?? '');
         $room_id = !empty($_POST['room_id']) ? intval($_POST['room_id']) : null;
-        $preferred_date = $_POST['preferred_date'] ?? null;
+        $preferred_date = !empty($_POST['preferred_date']) ? $_POST['preferred_date'] : null;
         $message = trim($_POST['message'] ?? '');
         $payment_type = $_POST['payment_type'] ?? 'none';
         $payment_method = $_POST['payment_method'] ?? 'paystack';
 
-        if (empty($full_name) || empty($phone)) {
-            jsonOut(['error' => 'Name and phone are required.']);
+        if (empty($full_name) || empty($phone) || empty($email)) {
+            jsonOut(['error' => 'Name, phone, and email are required.']);
             exit;
         }
         if (!validatePhone($phone)) {
             jsonOut(['error' => 'Phone number must be exactly 10 digits.']);
             exit;
         }
-        if (!empty($email) && !validateEmail($email)) {
-            jsonOut(['error' => 'Please enter a valid email address.']);
+        $emailCheck = validateEmailDetailed($email);
+        if (!$emailCheck['valid']) {
+            jsonOut(['error' => $emailCheck['message']]);
+            exit;
+        }
+        if ($preferred_date && $preferred_date < date('Y-m-d')) {
+            jsonOut(['error' => "Your preferred view-in date can't be in the past. Please choose today or a later date."]);
             exit;
         }
 
@@ -75,15 +78,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         try {
-            $stmt = $db->prepare("INSERT INTO booking_requests (full_name, email, phone, room_id, preferred_date, message, payment_type, payment_amount, payment_method, payment_reference, payment_status, verification_code) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-            $stmt->execute([$full_name, $email, $phone, $room_id, $preferred_date, $message, $payment_type, $payment_amount, $payment_method, $payment_reference, $payment_status, $verification_code]);
-        } catch (PDOException $e) {
-            $stmt = $db->prepare("INSERT INTO booking_requests (full_name, email, phone, room_id, preferred_date, message, payment_type, payment_amount, payment_method, payment_reference, payment_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-            $stmt->execute([$full_name, $email, $phone, $room_id, $preferred_date, $message, $payment_type, $payment_amount, $payment_method, $payment_reference, $payment_status]);
-            $newId = $db->lastInsertId();
-            if ($verification_code) {
-                try { $db->prepare("UPDATE booking_requests SET verification_code = ? WHERE id = ?")->execute([$verification_code, $newId]); } catch (PDOException $e2) {}
+            try {
+                $stmt = $db->prepare("INSERT INTO booking_requests (full_name, email, phone, room_id, preferred_date, message, payment_type, payment_amount, payment_method, payment_reference, payment_status, verification_code) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                $stmt->execute([$full_name, $email, $phone, $room_id, $preferred_date, $message, $payment_type, $payment_amount, $payment_method, $payment_reference, $payment_status, $verification_code]);
+            } catch (PDOException $e) {
+                // verification_code column may not exist yet on an un-migrated database
+                $stmt = $db->prepare("INSERT INTO booking_requests (full_name, email, phone, room_id, preferred_date, message, payment_type, payment_amount, payment_method, payment_reference, payment_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                $stmt->execute([$full_name, $email, $phone, $room_id, $preferred_date, $message, $payment_type, $payment_amount, $payment_method, $payment_reference, $payment_status]);
+                $newId = $db->lastInsertId();
+                if ($verification_code) {
+                    try { $db->prepare("UPDATE booking_requests SET verification_code = ? WHERE id = ?")->execute([$verification_code, $newId]); } catch (PDOException $e2) {}
+                }
             }
+        } catch (PDOException $e3) {
+            jsonOut(['error' => 'We could not submit your booking right now. Please try again in a moment.']);
+            exit;
         }
         $bookingId = $db->lastInsertId();
 
@@ -164,7 +173,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         sendSMS($phone, $booker_sms);
         if ($admins) {
-            sendSMS($admins[0]['phone'], "New booking from $full_name$room_label. Phone: $phone$payment_note");
+            sendSMS($admins[0]['phone'], "New booking from $full_name$room_label. Phone: $phone." . $payment_note);
         }
         exit;
     }
@@ -269,7 +278,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $id = intval($_POST['id'] ?? 0);
         $code = trim($_POST['verification_code'] ?? '');
-        $reference = trim($_POST['payment_reference'] ?? 'ADMIN-' . strtoupper(bin2hex(random_bytes(4))));
+        $refInput = trim($_POST['payment_reference'] ?? '');
+        $reference = $refInput !== '' ? $refInput : 'ADMIN-' . strtoupper(bin2hex(random_bytes(4)));
 
         if (empty($code)) {
             jsonOut(['error' => 'Please enter the verification code from the booker.']);
@@ -294,6 +304,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt = $db->prepare("UPDATE booking_requests SET payment_status = 'completed', payment_reference = ? WHERE id = ?");
         $stmt->execute([$reference, $id]);
 
+        $stmt = $db->prepare("SELECT full_name, phone FROM booking_requests WHERE id = ?");
+        $stmt->execute([$id]);
+        $req = $stmt->fetch();
+        if ($req) {
+            sendSMS($req['phone'], "Dear " . $req['full_name'] . ", your booking payment has been confirmed. Thank you for choosing PK's Luxury Apartments.");
+        }
+
         jsonOut(['success' => true]);
         exit;
     }
@@ -309,6 +326,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $id = intval($_POST['id'] ?? 0);
         $stmt = $db->prepare("UPDATE booking_requests SET payment_status = 'failed' WHERE id = ?");
         $stmt->execute([$id]);
+
+        $stmt = $db->prepare("SELECT full_name, phone FROM booking_requests WHERE id = ?");
+        $stmt->execute([$id]);
+        $req = $stmt->fetch();
+        if ($req) {
+            sendSMS($req['phone'], "Dear " . $req['full_name'] . ", we could not confirm your booking payment. Please contact PK's Luxury Apartments for assistance.");
+        }
 
         jsonOut(['success' => true]);
         exit;

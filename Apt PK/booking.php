@@ -1,8 +1,5 @@
 <?php
-// =====================================================
-// Standalone Booking Page — with payment step
-// PK's Luxury Apartments — Apartment Management System
-// =====================================================
+// Standalone booking page — walks a prospective tenant through their details and an optional deposit payment.
 require_once __DIR__ . '/config/database.php';
 $db = getDB();
 
@@ -28,10 +25,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $payment_type = $_POST['payment_type'] ?? 'none';
         $payment_method = $_POST['payment_method'] ?? 'paystack';
 
-        if (empty($full_name) || empty($phone)) {
-            $error = 'Please provide your name and phone number.';
+        $emailCheck = validateEmailDetailed($email);
+        if (empty($full_name) || empty($phone) || empty($email)) {
+            $error = 'Please provide your name, phone number, and email address.';
         } elseif (!validatePhone($phone)) {
             $error = 'Phone number must be exactly 10 digits.';
+        } elseif (!$emailCheck['valid']) {
+            $error = $emailCheck['message'];
+        } elseif ($preferred_date && $preferred_date < date('Y-m-d')) {
+            $error = "Your preferred view-in date can't be in the past. Please choose today or a later date.";
         } else {
             $payment_amount = 0;
             $payment_reference = '';
@@ -49,9 +51,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
             if ($payment_type !== 'none' && $payment_method === 'bank_transfer') {
-                $payment_status = 'pending_verification';
+                $payment_status = 'pending';
             } elseif ($payment_type !== 'none' && $payment_method === 'cash') {
-                $payment_status = 'pending_verification';
+                $payment_status = 'pending';
             }
 
             $stmt = $db->prepare("INSERT INTO booking_requests (full_name, email, phone, room_id, preferred_date, message, payment_type, payment_amount, payment_method, payment_reference, payment_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
@@ -78,7 +80,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $notifParams[] = 'info';
                 }
                 $db->prepare($notifSql)->execute($notifParams);
-                sendSMS($admins[0]['phone'], "New booking request from $full_name$room_label. Phone: $phone$payment_note");
+                sendSMS($admins[0]['phone'], "New booking request from $full_name$room_label. Phone: $phone." . $payment_note);
             }
 
             sendSMS($phone, "Dear $full_name, your booking request has been received" . ($payment_type !== 'none' ? " with a payment of " . formatCurrency($payment_amount) : "") . ". PK's Luxury Apartments will contact you within 24 hours.");
@@ -192,9 +194,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         </div>
                     </div>
                     <div class="form-group">
-                        <label>Email Address</label>
-                        <input type="email" name="email" class="form-control" placeholder="your@email.com"
-                            value="<?= sanitize($user ? ($user['email'] ?? '') : ($_POST['email'] ?? '')) ?>">
+                        <label>Email Address *</label>
+                        <input type="email" name="email" class="form-control" placeholder="e.g. name@example.com" pattern="[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}"
+                            value="<?= sanitize($user ? ($user['email'] ?? '') : ($_POST['email'] ?? '')) ?>" required>
                     </div>
                     <div class="form-row">
                         <div class="form-group">
@@ -365,5 +367,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     function fmtCcy(n) { return 'GH\u20B5 ' + Number(n).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
     </script>
+    <script src="js/email-validator.js"></script>
 </body>
 </html>

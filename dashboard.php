@@ -1,8 +1,5 @@
 <?php
-// =====================================================
-// Dashboard Page
-// PK's Luxury Apartments — Apartment Management System
-// =====================================================
+// Home dashboard — shows admin/staff the property overview, or a tenant their own room and payments.
 require_once __DIR__ . '/config/database.php';
 $pageTitle = 'Dashboard';
 requireRole(['admin', 'staff', 'tenant']);
@@ -29,7 +26,7 @@ if ($role === 'admin' || $role === 'staff') {
     $tenantRooms = $db->query("SELECT u.id, u.full_name, u.phone, r.id AS room_id, r.room_number, r.room_type, t.start_date, t.end_date,
         rt.charge_period,
         (SELECT COALESCE(SUM(rp.amount),0) FROM rent_payments rp WHERE rp.tenant_id = u.id) AS total_paid,
-        (SELECT COALESCE(SUM(rp.amount),0) FROM rent_payments rp WHERE rp.tenant_id = u.id AND MONTH(rp.month_covered)=MONTH(CURRENT_DATE()) AND YEAR(rp.month_covered)=YEAR(CURRENT_DATE())) AS current_month_paid
+        (SELECT COALESCE(SUM(rp.amount),0) FROM rent_payments rp WHERE rp.tenant_id = u.id AND rp.status = 'completed' AND rp.month_covered = DATE_FORMAT(CURRENT_DATE(), '%Y-%m')) AS current_month_paid
         FROM users u
         JOIN tenancies t ON t.tenant_id = u.id AND t.status = 'active'
         JOIN rooms r ON t.room_id = r.id
@@ -179,7 +176,7 @@ include __DIR__ . '/includes/header.php';
                     <td style="font-weight:600;"><?= sanitize($tr['full_name']) ?></td>
                     <td><?= sanitize($tr['phone']) ?></td>
                     <td><span class="badge badge-success"><?= sanitize($tr['room_number']) ?></span> <span style="font-size:0.72rem;color:var(--text-muted);">ID: <?= (int)$tr['room_id'] ?></span></td>
-                    <td><?= ucfirst($tr['room_type']) ?></td>
+                    <td><?= sanitize(ucfirst($tr['room_type'])) ?></td>
                     <td><?= ($tr['charge_period'] ?? 'monthly') === 'daily' ? 'Daily' : 'Monthly' ?></td>
                     <td style="font-size:0.8rem;"><?= date('M j, Y', strtotime($tr['start_date'])) ?> — <?= $tr['end_date'] ? date('M j, Y', strtotime($tr['end_date'])) : 'Ongoing' ?></td>
                     <td><?= $tr['current_month_paid'] > 0 ? '<span class="badge badge-success">Paid</span>' : '<span class="badge badge-danger">Unpaid</span>' ?></td>
@@ -344,7 +341,7 @@ include __DIR__ . '/includes/header.php';
     </div>
     <div class="grid-2">
         <div>
-            <p style="margin-bottom:6px;"><strong>Type:</strong> <?= ucfirst($myRoom['room_type']) ?> <span class="badge badge-info" style="font-size:0.72rem;vertical-align:middle;"><?= ($myRoom['charge_period'] ?? 'monthly') === 'daily' ? 'Daily Rate' : 'Monthly Rate' ?></span></p>
+            <p style="margin-bottom:6px;"><strong>Type:</strong> <?= sanitize(ucfirst($myRoom['room_type'])) ?> <span class="badge badge-info" style="font-size:0.72rem;vertical-align:middle;"><?= ($myRoom['charge_period'] ?? 'monthly') === 'daily' ? 'Daily Rate' : 'Monthly Rate' ?></span></p>
             <p style="margin-bottom:6px;"><strong>Floor:</strong> <?= $myRoom['floor'] ?></p>
             <p><strong>Amenities:</strong> <?= sanitize($myRoom['amenities']) ?></p>
         </div>

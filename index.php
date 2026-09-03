@@ -1,11 +1,13 @@
 <?php
-// =====================================================
-// LANDING PAGE — PK's Luxury Apartments
-// =====================================================
+// Public landing/booking page — lists available rooms and handles booking and report submissions.
 require_once __DIR__ . '/config/database.php';
+sendSecurityHeaders();
 $db = getDB();
 
 $availableRooms = $db->query("SELECT r.*, rt.charge_period FROM rooms r LEFT JOIN room_types rt ON rt.name = r.room_type WHERE r.status = 'available' ORDER BY r.rental_price ASC")->fetchAll();
+
+// Footer "Residence Types" list mirrors whatever types admin/staff have set up, not a hardcoded list
+$footerRoomTypes = $db->query("SELECT name FROM room_types ORDER BY id ASC")->fetchAll(PDO::FETCH_COLUMN);
 
 // Attach a gallery of admin-uploaded images (primary + room_images) per residence
 $galleryByRoom = [];
@@ -53,10 +55,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $payment_type = $_POST['payment_type'] ?? 'none';
         $payment_method = $_POST['payment_method'] ?? 'paystack';
 
-        if (empty($full_name) || empty($phone)) {
-            $error = 'Please provide your name and phone number.';
+        $emailCheck = validateEmailDetailed($email);
+        if (empty($full_name) || empty($phone) || empty($email)) {
+            $error = 'Please provide your name, phone number, and email address.';
         } elseif (!validatePhone($phone)) {
             $error = 'Phone number must be exactly 10 digits.';
+        } elseif (!$emailCheck['valid']) {
+            $error = $emailCheck['message'];
+        } elseif ($preferred_date && $preferred_date < date('Y-m-d')) {
+            $error = "Your preferred view-in date can't be in the past. Please choose today or a later date.";
         } else {
             $payment_amount = 0;
             $payment_reference = '';
@@ -129,7 +136,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             $pendingSms[] = ['phone' => $phone, 'msg' => $booker_sms];
             if ($admins) {
-                $pendingSms[] = ['phone' => $admins[0]['phone'], 'msg' => "New booking from $full_name$room_label. Phone: $phone$payment_note"];
+                $pendingSms[] = ['phone' => $admins[0]['phone'], 'msg' => "New booking from $full_name$room_label. Phone: $phone." . $payment_note];
             }
 
             $success = 'Your booking request has been submitted! We will contact you within 24 hours.';
@@ -166,7 +173,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PK's Luxury Apartments — Premium Living in Haatso, Accra</title>
+    <title>PK's Luxury Apartments | Premium Living in Haatso, Accra</title>
     <meta name="description" content="Experience premium apartment living at PK's Luxury Apartments in Haatso, Accra. Modern residences, excellent amenities, and affordable prices.">
     <link rel="preconnect" href="https://unpkg.com" crossorigin>
     <link rel="stylesheet" href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css">
@@ -181,10 +188,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </head>
 <body style="background:#fff;">
 
+<?php if ($success): ?>
+<div class="alert alert-success" style="margin:16px 24px;"><?= sanitize($success) ?></div>
+<?php elseif ($error): ?>
+<div class="alert alert-error" style="margin:16px 24px;"><?= sanitize($error) ?></div>
+<?php endif; ?>
+
 <!-- ============ TOP NAVIGATION ============ -->
 <nav class="booking-nav" id="bookingNav">
     <div class="booking-nav-brand">
-        <i class='bx bx-home' style="font-size:1.3rem;"></i> <span class="brand-gold">PK's</span> Luxury Apartments
+        <i class='bx bx-home' style="font-size:1.3rem;"></i> <span class="brand-gold">PK's</span> <span class="nav-brand-full">Luxury Apartments</span>
     </div>
     <div class="booking-nav-links">
         <a href="#about">About</a>
@@ -246,8 +259,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <div class="section-tag">About Us</div>
                 </div>
                 <h3>A Place You'll Be Proud to Call Home</h3>
-                <p>PK's Luxury Apartments is a premier residential property located in the vibrant neighborhood of Haatso, Accra. We offer a range of modern living spaces designed to meet the needs of young professionals, families, and students.</p>
-                <p>Our commitment to quality, security, and resident satisfaction makes us the preferred choice for discerning tenants in Accra.</p>
+                <p>PK's Luxury Apartments sits in the heart of Haatso, Accra, one of the city's liveliest neighborhoods. Our homes are built for young professionals, families, and students alike. Wherever you are in life, we've got a space that fits.</p>
+                <p>We care about doing the basics right: quality, security, and making sure our tenants are genuinely happy here. It's why so many people choose to call PK's home.</p>
                 <div class="about-features">
                     <div class="about-feature">
                         <span class="check"><i class='bx bx-check'></i></span> Secure environment
@@ -348,7 +361,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <?php else: ?>
                         <i class='bx bx-home' style="font-size:3rem;"></i>
                     <?php endif; ?>
-                    <span class="room-showcase-badge"><?= ucfirst($r['room_type']) ?></span>
+                    <span class="room-showcase-badge"><?= sanitize(ucfirst($r['room_type'])) ?></span>
                     <span class="room-showcase-view"><i class='bx bx-expand'></i> View</span>
                 </div>
                 <div class="room-showcase-body">
@@ -391,7 +404,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <div class="testimonials-grid stagger">
             <div class="testimonial-card">
                 <div class="testimonial-text">
-                    Living at PK's Luxury Apartments has been a wonderful experience. The rooms are clean, the WiFi is fast, and the management is very responsive to any issues.
+                    My shower stopped working on a Sunday and I wasn't expecting anyone to come until Monday. Someone from maintenance showed up within the hour. That's when I knew I'd picked the right place.
                 </div>
                 <div class="testimonial-author">
                     <div class="testimonial-avatar">AA</div>
@@ -403,7 +416,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
             <div class="testimonial-card">
                 <div class="testimonial-text">
-                    The location is perfect — close to everything I need in Haatso. The rent is affordable for the quality you get. I highly recommend PK's Luxury Apartments.
+                    I picked this place mainly because I can walk to the market and catch a trotro without stress. Turned out to be a good move too, since my friends pay more for a lot less space.
                 </div>
                 <div class="testimonial-author">
                     <div class="testimonial-avatar">KB</div>
@@ -415,7 +428,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
             <div class="testimonial-card">
                 <div class="testimonial-text">
-                    Great security, reliable water and power supply. The online payment system makes rent payment so convenient. Best apartment I've lived in Accra.
+                    I used to dread rent day because it meant queuing at the office with cash. Now I just pay from my phone in a couple of minutes. Small thing, but it made a real difference for me.
                 </div>
                 <div class="testimonial-author">
                     <div class="testimonial-avatar">EM</div>
@@ -500,7 +513,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </div>
                 <div class="form-group">
                     <label style="font-weight:700;font-size:0.85rem;">Email Address</label>
-                    <input type="email" name="reporter_email" class="form-control" placeholder="your@email.com">
+                    <input type="email" name="reporter_email" class="form-control" placeholder="e.g. name@example.com" pattern="[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}">
                 </div>
                 <div class="form-group">
                     <label style="font-weight:700;font-size:0.85rem;">Category <span style="color:var(--danger);">*</span></label>
@@ -533,8 +546,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <i class="bx bx-check-circle" style="font-size:2.6rem;color:#4CAF50;"></i>
         </div>
         <h3 style="font-size:1.25rem;margin-bottom:10px;color:#FFFFFF;font-weight:700;">Report Submitted Successfully</h3>
-        <p id="reportSuccessMessage" style="color:rgba(255,255,255,0.7);font-size:0.9rem;line-height:1.6;margin-bottom:28px;">Your report has been received. We will review it and respond promptly.</p>
+        <p id="reportSuccessMessage" style="color:rgba(255,255,255,0.7);font-size:0.9rem;line-height:1.6;margin-bottom:28px;">Thanks! We've got your report and will get back to you soon.</p>
         <button onclick="closeReportSuccessModal()" style="background:linear-gradient(135deg,#4CAF50,#388E3C);color:#fff;border:none;padding:12px 32px;border-radius:var(--radius-sm);font-size:0.95rem;font-weight:600;cursor:pointer;min-width:160px;transition:opacity 0.2s;" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">OK, Got It</button>
+    </div>
+</div>
+
+<!-- Booking Success Modal -->
+<div id="bookingSuccessModal" class="modal-overlay" onclick="if(event.target===this)closeBookingSuccessModal()">
+    <div style="background:#1B2A4A;border-radius:var(--radius-lg);box-shadow:var(--shadow-lg);max-width:460px;width:92%;padding:44px 32px 36px;text-align:center;position:relative;margin:20px;border:1px solid rgba(255,255,255,0.1);">
+        <button onclick="closeBookingSuccessModal()" style="position:absolute;top:12px;right:16px;background:none;border:none;font-size:1.5rem;cursor:pointer;color:rgba(255,255,255,0.5);line-height:1;" aria-label="Close">&times;</button>
+        <div style="width:76px;height:76px;border-radius:50%;background:rgba(76,175,80,0.15);display:flex;align-items:center;justify-content:center;margin:0 auto 18px;border:2px solid rgba(76,175,80,0.4);">
+            <i class="bx bx-check-circle" style="font-size:2.6rem;color:#4CAF50;"></i>
+        </div>
+        <h3 style="font-size:1.25rem;margin-bottom:10px;color:#FFFFFF;font-weight:700;">Booking Request Submitted</h3>
+        <p id="bookingSuccessMessage" style="color:rgba(255,255,255,0.7);font-size:0.9rem;line-height:1.6;margin-bottom:28px;">We've received your request and will contact you soon.</p>
+        <button onclick="closeBookingSuccessModal()" style="background:linear-gradient(135deg,#4CAF50,#388E3C);color:#fff;border:none;padding:12px 32px;border-radius:var(--radius-sm);font-size:0.95rem;font-weight:600;cursor:pointer;min-width:160px;transition:opacity 0.2s;" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">OK, Got It</button>
     </div>
 </div>
 
@@ -558,8 +584,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </div>
             </div>
             <div class="form-group">
-                <label>Email Address</label>
-                <input type="email" name="email" class="form-control" placeholder="your@email.com" value="<?= sanitize($_POST['email'] ?? '') ?>">
+                <label>Email Address *</label>
+                <input type="email" name="email" class="form-control" placeholder="e.g. name@example.com" pattern="[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}" value="<?= sanitize($_POST['email'] ?? '') ?>" required>
             </div>
             <div class="form-row">
                 <div class="form-group">
@@ -568,7 +594,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <option value="">Any available room</option>
                         <?php foreach ($availableRooms as $r): ?>
                         <option value="<?= $r['id'] ?>" <?= (isset($_POST['room_id']) && $_POST['room_id'] == $r['id']) ? 'selected' : '' ?>>
-                            <?= sanitize($r['room_number']) ?> — <?= ucfirst($r['room_type']) ?> — GH&#8373; <?= number_format($r['rental_price'], 0) ?>/<?= ($r['charge_period'] ?? 'monthly') === 'daily' ? 'day' : 'mo' ?>
+                            <?= sanitize($r['room_number']) ?> &bull; <?= sanitize(ucfirst($r['room_type'])) ?> &bull; GH&#8373; <?= number_format($r['rental_price'], 0) ?>/<?= ($r['charge_period'] ?? 'monthly') === 'daily' ? 'day' : 'mo' ?>
                         </option>
                         <?php endforeach; ?>
                     </select>
@@ -606,10 +632,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <span><strong>Note:</strong> Balance must be paid within 1 week of move-in.</span>
             </div>
             <button type="submit" class="btn btn-primary btn-block btn-lg">Submit Booking Request</button>
-            <div id="bookingModalSuccess" style="display:none;margin-top:16px;padding:16px;background:rgba(76,175,80,0.12);border:1px solid rgba(76,175,80,0.4);border-radius:var(--radius);text-align:center;">
-                <i class='bx bx-check-circle' style="font-size:1.6rem;color:#4CAF50;display:block;margin-bottom:6px;"></i>
-                <span style="color:#fff;font-size:0.92rem;"></span>
-            </div>
         </form>
     </div>
 </div>
@@ -619,7 +641,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <div class="footer-grid">
         <div class="footer-brand">
             <h3><i class='bx bx-home'></i> <span class="brand-gold">PK's</span> <span style="color:#fff;">Luxury Apartments</span></h3>
-            <p>Premium apartment living in Haatso, Accra. Modern residences, excellent amenities, and a commitment to tenant satisfaction.</p>
+            <p>Premium apartment living in Haatso, Accra: modern residences, great amenities, and tenants who actually love living here.</p>
         </div>
         <div class="footer-col">
             <h4>Quick Links</h4>
@@ -629,13 +651,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <a href="#location">Location</a>
             <a href="#report">Send a Report</a>
         </div>
+        <?php if ($footerRoomTypes): ?>
         <div class="footer-col">
             <h4>Residence Types</h4>
-            <a href="#rooms">Single Residence</a>
-            <a href="#rooms">Double Residence</a>
-            <a href="#rooms">Studio</a>
-            <a href="#rooms">Penthouse</a>
+            <?php foreach ($footerRoomTypes as $type): ?>
+            <a href="#rooms"><?= sanitize(ucfirst($type)) ?></a>
+            <?php endforeach; ?>
         </div>
+        <?php endif; ?>
         <div class="footer-col">
             <h4>Contact</h4>
             <a href="tel:0554016037"><i class='bx bx-phone'></i> 055 401 6037</a>
@@ -812,6 +835,13 @@ async function submitPublicReport(e) {
     btn.innerHTML = '<i class="bx bx-loader-alt bx-spin"></i> Sending...';
     btn.disabled = true;
     try {
+        // Same reasoning as the booking form: refresh the token right
+        // before submitting in case the session has since expired.
+        try {
+            const csrfRes = await fetch('api/csrf_token.php');
+            const csrfData = await csrfRes.json();
+            if (csrfData && csrfData.csrf_token) form.set('csrf_token', csrfData.csrf_token);
+        } catch (csrfErr) { /* fall through with the original token */ }
         const res = await fetch('api/feedback.php', { method: 'POST', body: form });
         if (!res.ok) throw new Error('Server error');
         const data = await res.json();
@@ -820,7 +850,7 @@ async function submitPublicReport(e) {
         if (data.success) {
             e.target.reset();
             e.target.querySelectorAll('input, textarea, select').forEach(el => { el.value = el.tagName === 'SELECT' ? el.options[0].value : ''; });
-            document.getElementById('reportSuccessMessage').textContent = data.message || 'Your report has been received. We will review it and respond promptly.';
+            document.getElementById('reportSuccessMessage').textContent = data.message || 'Thanks! We\'ve got your report and will get back to you soon.';
             document.getElementById('reportSuccessModal').classList.add('active');
             document.body.style.overflow = 'hidden';
         } else {
@@ -831,7 +861,7 @@ async function submitPublicReport(e) {
         btn.disabled = false;
         e.target.reset();
         e.target.querySelectorAll('input, textarea, select').forEach(el => { el.value = el.tagName === 'SELECT' ? el.options[0].value : ''; });
-        document.getElementById('reportSuccessMessage').textContent = 'Your report has been received. We will review it and respond promptly.';
+        document.getElementById('reportSuccessMessage').textContent = 'Thanks! We\'ve got your report and will get back to you soon.';
         document.getElementById('reportSuccessModal').classList.add('active');
         document.body.style.overflow = 'hidden';
     }
@@ -847,6 +877,10 @@ function closeBookingModal() {
     const modal = document.getElementById('bookingModal');
     modal.classList.remove('active');
     document.body.style.overflow = 'auto';
+}
+function closeBookingSuccessModal() {
+    document.getElementById('bookingSuccessModal').classList.remove('active');
+    document.body.style.overflow = '';
 }
 document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeBookingModal(); });
 
@@ -869,6 +903,14 @@ async function submitBookingModal(e) {
     btn.innerHTML = '<i class="bx bx-loader-alt bx-spin"></i> Submitting...';
     btn.disabled = true;
     try {
+        // This form can sit open a while as visitors browse rooms, so the
+        // original session may have expired by now — grab a fresh token
+        // right before submitting instead of risking a stale one.
+        try {
+            const csrfRes = await fetch('api/csrf_token.php');
+            const csrfData = await csrfRes.json();
+            if (csrfData && csrfData.csrf_token) form.set('csrf_token', csrfData.csrf_token);
+        } catch (csrfErr) { /* fall through with the original token */ }
         const res = await fetch('api/bookings.php', { method: 'POST', body: form });
         const data = await res.json();
         console.log('Booking response:', data);
@@ -879,22 +921,15 @@ async function submitBookingModal(e) {
                 window.location.href = data.authorization_url;
                 return;
             }
+            e.target.reset();
             if (data.paystack_error) {
-                showToast('Booking saved. ' + data.paystack_error, 'error');
-                e.target.reset();
+                closeBookingModal();
+                alert('Booking saved. ' + data.paystack_error);
                 return;
             }
-            const suc = document.getElementById('bookingModalSuccess');
-            if (suc) {
-                suc.querySelector('span').textContent = data.message || 'Your booking request has been submitted! We will contact you within 24 hours.';
-                suc.style.display = 'block';
-            }
-            e.target.reset();
-            showToast('Booking request submitted!', 'success');
-            if (suc) {
-                suc.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                setTimeout(() => { suc.style.display = 'none'; }, 8000);
-            }
+            closeBookingModal();
+            document.getElementById('bookingSuccessModal').classList.add('active');
+            document.body.style.overflow = 'hidden';
         } else {
             alert(data.error || 'Error submitting booking. Please try again.');
         }
@@ -936,12 +971,13 @@ function updateBookingPaymentInfo() {
     const methodLabel = method === 'paystack' ? 'Mobile Money' : 'Bank Transfer';
 
     info.innerHTML = '<strong>' + label + ':</strong> GH&#8373; ' + amount.toLocaleString(undefined, {minimumFractionDigits:2}) +
-        ' via ' + methodLabel + (method === 'bank_transfer' ? ' — Bank details will be shown after submission.' : '') +
-        (method === 'paystack' ? ' — You will be redirected to complete payment.' : '') +
+        ' via ' + methodLabel + (method === 'bank_transfer' ? '. Bank details will be shown after submission.' : '') +
+        (method === 'paystack' ? '. You will be redirected to complete payment.' : '') +
         '<br><span style="font-size:0.78rem;color:var(--warning);font-weight:600;">Balance must be paid within 1 week of move-in.</span>';
     info.style.display = 'block';
 }
 </script>
+<script src="js/email-validator.js"></script>
 <?php if (!empty($pendingSms)): foreach ($pendingSms as $sms) { sendSMS($sms['phone'], $sms['msg']); } endif; ?>
 
 </body>

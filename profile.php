@@ -1,8 +1,5 @@
 <?php
-// =====================================================
-// Profile Page
-// PK's Luxury Apartments — Apartment Management System
-// =====================================================
+// Lets the logged-in user view their account details and edit their profile or password.
 require_once __DIR__ . '/config/database.php';
 $pageTitle = 'My Profile';
 requireLogin();
@@ -29,7 +26,7 @@ include __DIR__ . '/includes/header.php';
 
 <div class="profile-header">
     <div class="profile-pic-wrapper">
-        <img src="<?= SITE_URL ?>/uploads/profiles/<?= $user['profile_picture'] ?>" alt="Profile" id="profilePicPreview" onerror="this.src='https://ui-avatars.com/api/?name=<?= urlencode($user['full_name']) ?>&background=47433E&color=fff&size=100'">
+        <img src="<?= SITE_URL ?>/uploads/profiles/<?= sanitize($user['profile_picture']) ?>" alt="Profile" id="profilePicPreview" onerror="this.src='https://ui-avatars.com/api/?name=<?= urlencode($user['full_name']) ?>&background=47433E&color=fff&size=100'">
     </div>
     <div>
         <h3 style="font-size:1.2rem;color:#fff;"><?= sanitize($user['full_name']) ?></h3>
@@ -52,8 +49,8 @@ include __DIR__ . '/includes/header.php';
                     <input type="tel" name="phone" class="form-control" value="<?= sanitize($user['phone']) ?>" pattern="[0-9]{10}" maxlength="10" oninput="this.value=this.value.replace(/[^0-9]/g,'')" required>
                 </div>
                 <div class="form-group">
-                    <label>Email</label>
-                    <input type="email" name="email" class="form-control" value="<?= sanitize($user['email'] ?? '') ?>">
+                    <label>Email *</label>
+                    <input type="email" name="email" class="form-control" placeholder="e.g. name@example.com" pattern="[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}" value="<?= sanitize($user['email'] ?? '') ?>" required>
                 </div>
             </div>
             <div class="form-group">

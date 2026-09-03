@@ -1,8 +1,5 @@
 <?php
-// =====================================================
-// Maintenance Requests Page
-// PK's Luxury Apartments — Apartment Management System
-// =====================================================
+// Maintenance requests — tenants submit issues here, admin/staff track and update their status.
 require_once __DIR__ . '/config/database.php';
 $pageTitle = 'Maintenance Requests';
 requireLogin();
@@ -54,7 +51,7 @@ include __DIR__ . '/includes/header.php';
             <thead>
                 <tr>
                     <?php if ($isAdmin): ?><th>Tenant</th><?php endif; ?>
-                    <th>Room</th>
+                    <th>Residence</th>
                     <th>Category</th>
                     <th>Subject</th>
                     <th>Priority</th>

@@ -1,10 +1,10 @@
 # Database Migrations
 
-Upgrade scripts for databases that already exist. Apply them **in order** (001 → 015),
+Upgrade scripts for databases that already exist. Apply them **in order** (001 → 016),
 once each, from the `pk_ams` database.
 
 **New installs do not need these** — `setup.sql` at the project root already contains
-every table, column, and enum from all 15 migrations, plus seed data.
+every table, column, and enum from all 16 migrations, plus seed data.
 
 ## Applying via phpMyAdmin
 
@@ -38,6 +38,7 @@ C:\xampp\mysql\bin\mysql -u root pk_ams < "C:\xampp\htdocs\Apt PK\database\migra
 | 013 | `013_last_login.sql` | `users.last_login` for tracking inactive accounts |
 | 014 | `014_booking_payments.sql` | Add payment columns to `booking_requests` (down/full payment) |
 | 015 | `015_feedback_reports.sql` | `feedback_reports` table (tenant + public complaints/feedback) |
+| 016 | `016_booking_verification_code.sql` | `booking_requests.verification_code` (admin confirms payment) |
 
 > **Note:** migrations 011 and 012 are bug fixes. Apply them to any existing database
 > or the app will throw SQL errors (`Unknown column 'charge_period'` on the landing page

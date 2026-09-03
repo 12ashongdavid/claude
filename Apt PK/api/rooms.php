@@ -1,7 +1,5 @@
 <?php
-// =====================================================
-// API: Rooms CRUD (with image upload)
-// =====================================================
+// Handles rooms (residences) — CRUD, image gallery uploads, and room type management.
 require_once __DIR__ . '/../config/database.php';
 requireLogin();
 
@@ -40,7 +38,8 @@ function saveRoomImages() {
             echo json_encode(['error' => $uploadError]);
             exit;
         }
-        $ext = strtolower(pathinfo($f['name'], PATHINFO_EXTENSION));
+        $finfo = new finfo(FILEINFO_MIME_TYPE);
+        $ext = safeUploadExtension($finfo->file($f['tmp_name']));
         $filename = 'room_' . time() . '_' . mt_rand(1000, 9999) . '.' . $ext;
         if (move_uploaded_file($f['tmp_name'], UPLOAD_PATH . 'rooms/' . $filename)) {
             $saved[] = $filename;
