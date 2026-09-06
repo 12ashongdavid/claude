@@ -108,6 +108,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $adminUser = currentUser();
         $stmt = $db->prepare("UPDATE feedback_reports SET admin_reply = ?, admin_reply_by = ?, admin_reply_at = NOW(), status = ? WHERE id = ?");
         $stmt->execute([$reply, $adminUser['id'], $status, $id]);
+        if ($stmt->rowCount() === 0) {
+            echo json_encode(['error' => 'Report not found.']);
+            exit;
+        }
 
         // Notify the reporter
         $stmt2 = $db->prepare("SELECT user_id, reporter_name, reporter_phone FROM feedback_reports WHERE id = ?");
@@ -170,6 +174,18 @@ requireLogin();
 if (!in_array(currentUser()['role'], ['admin', 'staff'])) {
     http_response_code(403);
     echo json_encode(['error' => 'Forbidden']);
+    exit;
+}
+
+// Always the true totals, regardless of any status/category filter applied
+// to the list below — the dashboard stat cards call this after every change.
+if (($_GET['counts'] ?? '') === '1') {
+    echo json_encode([
+        'total' => (int) $db->query("SELECT COUNT(*) FROM feedback_reports")->fetchColumn(),
+        'new' => (int) $db->query("SELECT COUNT(*) FROM feedback_reports WHERE status='new'")->fetchColumn(),
+        'in_progress' => (int) $db->query("SELECT COUNT(*) FROM feedback_reports WHERE status='in_progress'")->fetchColumn(),
+        'resolved' => (int) $db->query("SELECT COUNT(*) FROM feedback_reports WHERE status='resolved'")->fetchColumn(),
+    ]);
     exit;
 }
 
