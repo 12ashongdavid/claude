@@ -188,6 +188,72 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
+    if ($action === 'assign_room') {
+        if (!in_array($user['role'], ['admin', 'staff'])) {
+            http_response_code(403);
+            echo json_encode(['error' => 'Forbidden']);
+            exit;
+        }
+
+        $tenant_id = intval($_POST['tenant_id'] ?? 0);
+        $room_id = intval($_POST['room_id'] ?? 0);
+        $start_date = $_POST['start_date'] ?? date('Y-m-d');
+        $monthly_rent = floatval($_POST['monthly_rent'] ?? 0);
+
+        $stmt = $db->prepare("SELECT id, is_active FROM users WHERE id = ? AND role = 'tenant'");
+        $stmt->execute([$tenant_id]);
+        $tenant = $stmt->fetch();
+        if (!$tenant) {
+            echo json_encode(['error' => 'Tenant not found.']);
+            exit;
+        }
+        if (!$tenant['is_active']) {
+            echo json_encode(['error' => 'Cannot assign a residence to a deactivated tenant. Reactivate them first.']);
+            exit;
+        }
+
+        $stmt = $db->prepare("SELECT COUNT(*) FROM tenancies WHERE tenant_id = ? AND status = 'active'");
+        $stmt->execute([$tenant_id]);
+        if ($stmt->fetchColumn() > 0) {
+            echo json_encode(['error' => 'This tenant already has an active residence.']);
+            exit;
+        }
+
+        if (!validateStartDate($start_date)) {
+            echo json_encode(['error' => 'Start date cannot be more than 1 month in the past.']);
+            exit;
+        }
+        if ($room_id <= 0) {
+            echo json_encode(['error' => 'Please select a room.']);
+            exit;
+        }
+        $stmt = $db->prepare("SELECT status FROM rooms WHERE id = ?");
+        $stmt->execute([$room_id]);
+        $roomStatus = $stmt->fetchColumn();
+        if ($roomStatus === false) {
+            echo json_encode(['error' => 'Selected room does not exist.']);
+            exit;
+        }
+        if ($roomStatus !== 'available') {
+            echo json_encode(['error' => 'Selected room is not available.']);
+            exit;
+        }
+        if ($monthly_rent <= 0) {
+            echo json_encode(['error' => 'Monthly rent must be greater than zero.']);
+            exit;
+        }
+
+        $end_date = date('Y-m-d', strtotime($start_date . '+1 year'));
+        $stmt = $db->prepare("INSERT INTO tenancies (tenant_id, room_id, start_date, end_date, monthly_rent, status) VALUES (?, ?, ?, ?, ?, 'active')");
+        $stmt->execute([$tenant_id, $room_id, $start_date, $end_date, $monthly_rent]);
+
+        $db->prepare("UPDATE rooms SET status = 'occupied' WHERE id = ?")->execute([$room_id]);
+        $db->prepare("INSERT INTO notifications (user_id, title, message, type) VALUES (?, 'Residence Assigned', 'You have been assigned a new residence. Check your dashboard for details.', 'success')")->execute([$tenant_id]);
+
+        echo json_encode(['success' => true]);
+        exit;
+    }
+
     if ($action === 'add_staff') {
         if ($user['role'] !== 'admin') {
             http_response_code(403);
@@ -332,7 +398,10 @@ if (!in_array($user['role'], ['admin', 'staff'])) {
 $role = $_GET['role'] ?? '';
 $search = $_GET['search'] ?? '';
 
-$sql = "SELECT id, username, full_name, email, phone, role, profile_picture, date_of_birth, is_active, created_at FROM users WHERE 1=1";
+$sql = "SELECT id, username, full_name, email, phone, role, profile_picture, date_of_birth, is_active, created_at,
+    (SELECT r.id FROM tenancies t JOIN rooms r ON r.id = t.room_id WHERE t.tenant_id = users.id AND t.status = 'active' ORDER BY t.id DESC LIMIT 1) AS room_id,
+    (SELECT r.room_number FROM tenancies t JOIN rooms r ON r.id = t.room_id WHERE t.tenant_id = users.id AND t.status = 'active' ORDER BY t.id DESC LIMIT 1) AS room_number
+    FROM users WHERE 1=1";
 $params = [];
 
 if ($role) {
