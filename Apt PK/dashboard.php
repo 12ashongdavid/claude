@@ -22,6 +22,30 @@ if ($role === 'admin' || $role === 'staff') {
     $pendingMaintenance = $db->query("SELECT COUNT(*) FROM maintenance_requests WHERE status IN ('submitted','in_progress')")->fetchColumn();
     $overdueBills = $db->query("SELECT COUNT(*) FROM utility_bills WHERE status='unpaid'")->fetchColumn();
     $pendingBookings = $db->query("SELECT COUNT(*) FROM booking_requests WHERE status='pending'")->fetchColumn();
+
+    // Revenue trend for the last 6 months (rent + paid utility bills), zero-filled for months with no activity
+    $revenueMonths = [];
+    for ($i = 5; $i >= 0; $i--) {
+        $ym = date('Y-m', strtotime("-$i months"));
+        $revenueMonths[$ym] = ['label' => date('M', strtotime($ym . '-01')), 'total' => 0.0];
+    }
+    $revenueRows = $db->query("
+        SELECT DATE_FORMAT(payment_date, '%Y-%m') AS ym, SUM(amount) AS total
+        FROM (
+            SELECT payment_date, amount FROM rent_payments WHERE status = 'completed'
+            UNION ALL
+            SELECT payment_date, amount FROM utility_bills WHERE status = 'paid' AND payment_date IS NOT NULL
+        ) combined
+        WHERE payment_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 5 MONTH)
+        GROUP BY ym
+    ")->fetchAll();
+    foreach ($revenueRows as $row) {
+        if (isset($revenueMonths[$row['ym']])) {
+            $revenueMonths[$row['ym']]['total'] = (float) $row['total'];
+        }
+    }
+    $revenueLabels = array_column($revenueMonths, 'label');
+    $revenueTotals = array_column($revenueMonths, 'total');
 } else {
     // Tenant stats
     $myRoom = $db->prepare("SELECT r.*, t.id as tenancy_id, t.monthly_rent, t.start_date, t.end_date FROM tenancies t JOIN rooms r ON t.room_id = r.id WHERE t.tenant_id = ? AND t.status = 'active'");
@@ -144,6 +168,26 @@ include __DIR__ . '/includes/header.php';
         <?php if ($maintenanceRooms > 0): ?>
         <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--danger);margin-right:4px;"></span> Maintenance (<?= $maintenanceRooms ?>)</span>
         <?php endif; ?>
+    </div>
+</div>
+
+<!-- Charts -->
+<div class="grid-2 mb-3">
+    <div class="card">
+        <div class="card-header">
+            <h3>Revenue Trend (Last 6 Months)</h3>
+        </div>
+        <div style="position:relative;height:260px;">
+            <canvas id="revenueTrendChart"></canvas>
+        </div>
+    </div>
+    <div class="card">
+        <div class="card-header">
+            <h3>Residence Status Breakdown</h3>
+        </div>
+        <div style="position:relative;height:260px;">
+            <canvas id="occupancyChart"></canvas>
+        </div>
     </div>
 </div>
 
@@ -390,6 +434,9 @@ include __DIR__ . '/includes/header.php';
 </div>
 <?php endif; ?>
 
+<?php if ($role === 'admin' || $role === 'staff'): ?>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.5.1/chart.umd.min.js"></script>
+<?php endif; ?>
 <script>
 function esc(s) { const d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; }
 function formatBytes(b) { b = Number(b) || 0; if (b < 1024) return b + ' B'; if (b < 1048576) return (b / 1024).toFixed(1) + ' KB'; return (b / 1048576).toFixed(2) + ' MB'; }
@@ -501,6 +548,58 @@ async function refreshDashboardStats() {
 
 refreshDashboardStats();
 setInterval(refreshDashboardStats, 10000);
+
+function cssVar(name) {
+    return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || undefined;
+}
+
+if (typeof Chart !== 'undefined') {
+    const revenueCtx = document.getElementById('revenueTrendChart');
+    if (revenueCtx) {
+        new Chart(revenueCtx, {
+            type: 'bar',
+            data: {
+                labels: <?= json_encode($revenueLabels) ?>,
+                datasets: [{
+                    label: 'Revenue',
+                    data: <?= json_encode($revenueTotals) ?>,
+                    backgroundColor: cssVar('--accent') || '#C9A227',
+                    borderRadius: 6,
+                }],
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { callbacks: { label: ctx => fmtCcy(ctx.parsed.y) } },
+                },
+                scales: {
+                    y: { beginAtZero: true, ticks: { callback: v => 'GH₵ ' + Number(v).toLocaleString() } },
+                },
+            },
+        });
+    }
+
+    const occupancyCtx = document.getElementById('occupancyChart');
+    if (occupancyCtx) {
+        new Chart(occupancyCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Occupied', 'Available', 'Maintenance'],
+                datasets: [{
+                    data: [<?= (int) $occupiedRooms ?>, <?= (int) $availableRooms ?>, <?= (int) $maintenanceRooms ?>],
+                    backgroundColor: [cssVar('--success') || '#4CAF50', cssVar('--text-muted') || '#9AA1AE', cssVar('--danger') || '#DE4444'],
+                }],
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { position: 'bottom' } },
+            },
+        });
+    }
+}
 <?php endif; ?>
 </script>
 
