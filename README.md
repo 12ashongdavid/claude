@@ -177,3 +177,12 @@ If you need to generate bcrypt hashes manually:
 ```
 C:\xampp\php\php.exe -r "echo password_hash('Admin@123', PASSWORD_DEFAULT);"
 ```
+
+---
+
+## Automated Testing & Deployment
+
+Every push and pull request runs a lint + test + smoke-test pipeline
+automatically via GitHub Actions — see [DEPLOYMENT.md](DEPLOYMENT.md)
+for how to run the same tests locally and how to (optionally) enable
+automatic deployment to production.
