@@ -24,7 +24,7 @@ function mobileJsonOut($data, $status = 200) {
 
 // Every mobile-api endpoint (except auth.php itself) starts by calling
 // this. Dies with a 401/403 JSON response if the token is missing,
-// unknown, or belongs to a non-tenant account — this app is tenant-only.
+// unknown, or belongs to a non-tenant account - this app is tenant-only.
 function requireMobileAuth() {
     $token = bearerTokenFromRequest();
     if (!$token) {

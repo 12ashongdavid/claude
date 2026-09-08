@@ -1,12 +1,12 @@
 <?php
 // Bearer-token issuing and lookup for the tenant mobile app. The web app
 // uses PHP session cookies, which don't work well for a PWA that may be
-// installed from a different origin than the API — so the mobile app
+// installed from a different origin than the API - so the mobile app
 // gets its own lightweight token instead.
 
 // Where the installed PWA lives. Paystack redirects the tenant's browser
 // here after checkout, so this needs to be the real, public URL of
-// mobile-app/ once it's deployed — update it before going live.
+// mobile-app/ once it's deployed - update it before going live.
 if (!defined('MOBILE_APP_URL')) {
     define('MOBILE_APP_URL', SITE_URL . '/mobile-app');
 }
@@ -50,7 +50,7 @@ function revokeApiToken($token) {
 
 // Pulls the bearer token out of the Authorization header, wherever it
 // ended up. Some hosts (this app targets shared cPanel hosting) strip
-// custom headers unless the server config forwards them explicitly —
+// custom headers unless the server config forwards them explicitly -
 // see mobile-api/.htaccess for the matching rewrite rule.
 function bearerTokenFromRequest() {
     $header = $_SERVER['HTTP_AUTHORIZATION'] ?? ($_SERVER['REDIRECT_HTTP_AUTHORIZATION'] ?? '');

@@ -1,6 +1,6 @@
 <?php
 // Login and logout for the tenant mobile app. Issues a bearer token
-// instead of a session cookie — see config/mobile_auth.php.
+// instead of a session cookie - see config/mobile_auth.php.
 require_once __DIR__ . '/_bootstrap.php';
 
 $action = $_POST['action'] ?? ($_GET['action'] ?? '');

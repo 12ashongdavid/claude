@@ -1,5 +1,5 @@
 // Caches the app shell so the PWA still opens (login screen, cached
-// screens) with no connection. API calls always go to the network —
+// screens) with no connection. API calls always go to the network -
 // they're personal, changing data, never something to serve stale.
 const CACHE_NAME = 'pk-mobile-shell-v1';
 const SHELL_FILES = [

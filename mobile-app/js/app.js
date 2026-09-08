@@ -1,4 +1,4 @@
-// Tiny hand-rolled router/renderer — no framework, so there's nothing to
+// Tiny hand-rolled router/renderer - no framework, so there's nothing to
 // build or install to run this app; open index.html and it works.
 
 const $app = document.getElementById('app');
@@ -113,7 +113,7 @@ function renderApp() {
 
     refreshUnreadDot();
     // Wait for the home screen's own data fetch to finish before showing
-    // the payment-outcome banner — it's injected into #screenBody, which
+    // the payment-outcome banner - it's injected into #screenBody, which
     // the screen render below would otherwise wipe out from under it.
     goTab('home').then(handlePaystackReturn);
 }
