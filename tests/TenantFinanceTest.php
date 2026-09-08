@@ -95,7 +95,7 @@ final class TenantFinanceTest extends DatabaseTestCase
         $range = getTenantPaidThroughRange($tenantId);
 
         $this->assertSame('Jan 2026 to Mar 2026', $range);
-        $this->assertStringNotContainsString('—', $range);
+        $this->assertStringNotContainsString('-', $range);
     }
 
     public function testGetTenantPaidMonthsReturnsOnlyCompletedMonthsSorted(): void

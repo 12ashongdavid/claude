@@ -1,12 +1,12 @@
 // Live email-provider check. Include this file once in the shared layout
-// and it takes care of every email input on the page by itself — no need
+// and it takes care of every email input on the page by itself - no need
 // to wire it up per form.
 (function () {
     'use strict';
 
     // Keep this list in sync with getAcceptedEmailDomains() /
     // getAcceptedEmailDomainSuffixes() in config/database.php. The client
-    // side check is just a fast first opinion — the server always has the
+    // side check is just a fast first opinion - the server always has the
     // final say.
     var ACCEPTED_DOMAINS = ['gmail.com', 'yahoo.com', 'outlook.com', 'hotmail.com', 'icloud.com', 'aol.com', 'protonmail.com'];
     var ACCEPTED_SUFFIXES = ['.edu.gh', '.ac.gh', '.gov.gh'];
@@ -24,7 +24,7 @@
         return false;
     }
 
-    // Don't judge a domain while it's still being typed — "gm" isn't wrong,
+    // Don't judge a domain while it's still being typed - "gm" isn't wrong,
     // it's just not finished yet. Wait for a dot with a couple of
     // characters after it before forming an opinion.
     function domainLooksFinished(domain) {
@@ -68,7 +68,7 @@
             return;
         }
         if (isAcceptedDomain(domain)) {
-            setState(input, true, "Looks good — that's a supported email provider.");
+            setState(input, true, "Looks good - that's a supported email provider.");
         } else {
             setState(input, false, 'Please use an accepted email provider (Gmail, Yahoo, Outlook, Hotmail, iCloud, AOL, ProtonMail, or a Ghanaian school/government address).');
         }

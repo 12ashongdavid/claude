@@ -28,7 +28,7 @@ if ($user['role'] === 'tenant' && $bill['tenant_id'] != $user['id']) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Utility Bill Receipt — <?= strtoupper($bill['bill_type']) ?></title>
+    <title>Utility Bill Receipt - <?= strtoupper($bill['bill_type']) ?></title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', Arial, sans-serif; color: #1A1A1A; background: #f5f5f5; }
@@ -126,7 +126,7 @@ if ($user['role'] === 'tenant' && $bill['tenant_id'] != $user['id']) {
         </div>
         <div class="receipt-row">
             <span class="label">Payment Date</span>
-            <span class="value"><?= $bill['payment_date'] ? date('F j, Y', strtotime($bill['payment_date'])) : '—' ?></span>
+            <span class="value"><?= $bill['payment_date'] ? date('F j, Y', strtotime($bill['payment_date'])) : '-' ?></span>
         </div>
     </div>
 

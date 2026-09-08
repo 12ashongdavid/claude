@@ -1,5 +1,5 @@
 <?php
-// Builds the revenue report for a date range — combined rent + utility totals plus the underlying transaction list.
+// Builds the revenue report for a date range - combined rent + utility totals plus the underlying transaction list.
 require_once __DIR__ . '/../config/database.php';
 requireRole(['admin', 'staff']);
 

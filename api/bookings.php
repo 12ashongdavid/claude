@@ -101,7 +101,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $db->prepare("UPDATE rooms SET status = 'occupied' WHERE id = ? AND status = 'available'")->execute([$room_id]);
         }
 
-        // Notify admins (batch insert) — code in notification only, NOT in admin SMS
+        // Notify admins (batch insert) - code in notification only, NOT in admin SMS
         $admins = $db->query("SELECT id, phone FROM users WHERE role = 'admin'")->fetchAll();
         $room_label = $room_id ? " for Residence #" . $room_id : "";
         $payment_note = $payment_type !== 'none' ? " Payment: " . formatCurrency($payment_amount) . " ($payment_type)." : "";
@@ -148,7 +148,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $paystack_error = 'Please select a residence before making a deposit payment.';
         }
 
-        // Send response IMMEDIATELY — SMS after response so client is never blocked
+        // Send response IMMEDIATELY - SMS after response so client is never blocked
         jsonOut([
             'success' => true,
             'booking_id' => $bookingId,

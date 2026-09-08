@@ -1,4 +1,4 @@
-# PK's Luxury Apartments — Apartment Management System
+# PK's Luxury Apartments - Apartment Management System
 
 ## Requirements
 
@@ -51,7 +51,7 @@ C:\xampp\mysql\bin\mysql -u root < "C:\xampp\htdocs\Apt PK\setup.sql"
 
 > `setup.sql` is self-contained (all tables, columns, and enums, plus seed data).
 > For **existing** databases, apply the ordered scripts in `database/migrations/`
-> instead — see `database/migrations/README.md`.
+> instead - see `database/migrations/README.md`.
 
 ### 4. Configure Database Connection
 

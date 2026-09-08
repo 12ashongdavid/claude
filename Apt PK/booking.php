@@ -1,5 +1,5 @@
 <?php
-// Standalone booking page — walks a prospective tenant through their details and an optional deposit payment.
+// Standalone booking page - walks a prospective tenant through their details and an optional deposit payment.
 require_once __DIR__ . '/config/database.php';
 $db = getDB();
 
@@ -118,7 +118,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Book a Residence — PK's Luxury Apartments</title>
+    <title>Book a Residence | PK's Luxury Apartments</title>
     <link rel="preconnect" href="https://unpkg.com" crossorigin>
     <link rel="stylesheet" href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css">
     <link rel="stylesheet" href="css/style.css?v=18">
@@ -208,7 +208,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     data-price="<?= $r['rental_price'] ?>"
                                     data-period="<?= ($r['charge_period'] ?? 'monthly') === 'daily' ? 'day' : 'month' ?>"
                                     <?= (isset($_POST['room_id']) && $_POST['room_id'] == $r['id']) ? 'selected' : '' ?>>
-                                    <?= sanitize($r['room_number']) ?> — <?= ucfirst($r['room_type']) ?> — GH&#8373; <?= number_format($r['rental_price'], 0) ?>/<?= ($r['charge_period'] ?? 'monthly') === 'daily' ? 'day' : 'mo' ?>
+                                    <?= sanitize($r['room_number']) ?> &bull; <?= ucfirst($r['room_type']) ?> &bull; GH&#8373; <?= number_format($r['rental_price'], 0) ?>/<?= ($r['charge_period'] ?? 'monthly') === 'daily' ? 'day' : 'mo' ?>
                                 </option>
                                 <?php endforeach; ?>
                             </select>

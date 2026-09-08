@@ -1,5 +1,5 @@
 <?php
-// Handles user accounts — profile updates, plus admin/staff management of tenants and staff.
+// Handles user accounts - profile updates, plus admin/staff management of tenants and staff.
 require_once __DIR__ . '/../config/database.php';
 requireLogin();
 
@@ -134,7 +134,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             exit;
         }
         if (empty($date_of_birth)) {
-            echo json_encode(['error' => 'Date of birth is required — the tenant must be at least 18 years old.']);
+            echo json_encode(['error' => 'Date of birth is required - the tenant must be at least 18 years old.']);
             exit;
         }
         if (!validateAge($date_of_birth)) {

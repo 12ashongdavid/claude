@@ -13,7 +13,7 @@ if (isset($_GET['paid'])) {
     if ($_GET['paid'] == 1) {
         setFlash('success', 'Payment successful and recorded automatically. Thank you!');
     } else {
-        setFlash('error', 'Payment was not completed — no charge was made. You can try again.');
+        setFlash('error', 'Payment was not completed - no charge was made. You can try again.');
     }
 }
 
@@ -38,7 +38,7 @@ if (!$isAdmin) {
 }
 
 // Tenant account summary
-$paidThrough = '—';
+$paidThrough = '-';
 $myOwing = 0.0;
 $nextDueMonth = null;
 $paidMonths = [];
@@ -47,10 +47,10 @@ $maxYm = date('Y-m', strtotime('+11 months'));
 if (!$isAdmin && $tenancy) {
     $arrears = computeTenantArrears($user['id']);
     $myOwing = $arrears['owing'];
-    $paidThrough = getTenantPaidThroughRange($user['id']) ?: '—';
+    $paidThrough = getTenantPaidThroughRange($user['id']) ?: '-';
     $nextDueMonth = getTenantNextDueMonth($user['id']);
     $paidMonths = getTenantPaidMonths($user['id']);
-    // Paid ahead beyond the one-year advance limit — nothing more to pay right now
+    // Paid ahead beyond the one-year advance limit - nothing more to pay right now
     $fullyPaid = $nextDueMonth > $maxYm;
 }
 // Month the form defaults to (never beyond the one-year advance window)
@@ -132,7 +132,7 @@ include __DIR__ . '/includes/header.php';
         <?php if ($fullyPaid): ?>
         <div class="alert alert-success" style="margin-bottom:16px;">
             <i class="bx bx-check-circle"></i>
-            <span>Your rent is already paid through <strong><?= date('F Y', strtotime($maxYm . '-01')) ?></strong>, which is the one-year advance limit. There is nothing to pay right now — when your paid period moves into the allowed window again, you will be able to extend from here.</span>
+            <span>Your rent is already paid through <strong><?= date('F Y', strtotime($maxYm . '-01')) ?></strong>, which is the one-year advance limit. There is nothing to pay right now - when your paid period moves into the allowed window again, you will be able to extend from here.</span>
         </div>
         <?php endif; ?>
         <input type="hidden" id="chargePeriod" value="<?= ($tenancy['charge_period'] ?? 'monthly') === 'daily' ? 'daily' : 'monthly' ?>">
@@ -257,7 +257,7 @@ include __DIR__ . '/includes/header.php';
                         <select name="room_id" id="payRoomId" class="form-control" required>
                             <option value="">Select room...</option>
                             <?php foreach ($rooms as $r): ?>
-                            <option value="<?= $r['id'] ?>" data-price="<?= $r['rental_price'] ?>"><?= sanitize($r['room_number']) ?> — <?= formatCurrency($r['rental_price']) ?></option>
+                            <option value="<?= $r['id'] ?>" data-price="<?= $r['rental_price'] ?>"><?= sanitize($r['room_number']) ?> &bull; <?= formatCurrency($r['rental_price']) ?></option>
                             <?php endforeach; ?>
                         </select>
                         <small id="payRoomHint" style="color:var(--text-muted);font-size:0.72rem;"></small>
@@ -468,7 +468,7 @@ function updateDailyRentCalc() {
     const startDate = startDateInput ? startDateInput.value : '';
     const endDate = startDate ? new Date(new Date(startDate).getTime() + (days - 1) * 86400000) : null;
     const fmtD = d => d ? d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '';
-    label.textContent = fmtD(new Date(startDate + 'T00:00:00')) + ' — ' + fmtD(endDate) + ' (' + days + ' day' + (days > 1 ? 's' : '') + ')';
+    label.textContent = fmtD(new Date(startDate + 'T00:00:00')) + ' - ' + fmtD(endDate) + ' (' + days + ' day' + (days > 1 ? 's' : '') + ')';
     label.style.color = 'var(--text-muted)';
     if (startDateInput) {
         const startYm = startDate.substring(0, 7);

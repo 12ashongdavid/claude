@@ -69,10 +69,10 @@ foreach ($inactiveUsers as $u) {
 
         sendSMS($u['phone'], "Dear {$u['full_name']}, your PK's Luxury Apartments account has been deactivated due to inactivity. Please contact management to reactivate.");
 
-        echo "Deactivated: {$u['full_name']} ({$u['role']}) — {$logMsg}\n";
+        echo "Deactivated: {$u['full_name']} ({$u['role']}) - {$logMsg}\n";
         $deactivated++;
     } catch (Exception $e) {
-        echo "FAILED: {$u['full_name']} — " . $e->getMessage() . "\n";
+        echo "FAILED: {$u['full_name']} - " . $e->getMessage() . "\n";
         $failed++;
     }
 }

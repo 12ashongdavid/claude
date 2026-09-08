@@ -1,5 +1,5 @@
 <?php
-// Home dashboard — shows admin/staff the property overview, or a tenant their own room and payments.
+// Home dashboard - shows admin/staff the property overview, or a tenant their own room and payments.
 require_once __DIR__ . '/config/database.php';
 $pageTitle = 'Dashboard';
 requireRole(['admin', 'staff', 'tenant']);
@@ -335,7 +335,7 @@ include __DIR__ . '/includes/header.php';
 <!-- My Room Info -->
 <div class="card mb-3">
     <div class="card-header">
-        <h3>My Residence — <?= sanitize($myRoom['room_number']) ?></h3>
+        <h3>My Residence - <?= sanitize($myRoom['room_number']) ?></h3>
         <span class="badge badge-success">Active Tenancy</span>
     </div>
     <div class="grid-2">

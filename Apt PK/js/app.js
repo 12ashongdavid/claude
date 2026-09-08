@@ -330,7 +330,7 @@ setInterval(async function() {
                 badge.style.display = 'none';
             }
         });
-    } catch (e) { /* silent — keep the app responsive */ }
+    } catch (e) { /* silent - keep the app responsive */ }
 }, 20000);
 
 // ---- Confirm Actions ----

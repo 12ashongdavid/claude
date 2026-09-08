@@ -1,5 +1,5 @@
 <?php
-// Handles utility bills — creating them for a tenant and marking them paid.
+// Handles utility bills - creating them for a tenant and marking them paid.
 require_once __DIR__ . '/../config/database.php';
 requireLogin();
 

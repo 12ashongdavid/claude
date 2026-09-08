@@ -1,5 +1,5 @@
 <?php
-// Reports dashboard for admin/staff — revenue, occupancy, and maintenance stats, plus a date-range report.
+// Reports dashboard for admin/staff - revenue, occupancy, and maintenance stats, plus a date-range report.
 require_once __DIR__ . '/config/database.php';
 $pageTitle = 'Reports';
 requireRole(['admin', 'staff']);

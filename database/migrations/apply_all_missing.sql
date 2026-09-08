@@ -3,7 +3,7 @@
 -- phpMyAdmin → pk_ams database → SQL tab → paste → Go
 --
 -- NOTE: If you see "Duplicate column name" errors for
--- migrations 013 or 014, that's fine — it just means
+-- migrations 013 or 014, that's fine - it just means
 -- they were already applied. The 015 CREATE TABLE uses
 -- IF NOT EXISTS so it won't error.
 -- =====================================================

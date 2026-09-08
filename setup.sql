@@ -1,5 +1,5 @@
 -- =====================================================
--- Apartment Management System — Database Schema + Seed Data
+-- Apartment Management System - Database Schema + Seed Data
 -- PK's Luxury Apartments, Haatso, Accra
 --
 -- This file is SELF-CONTAINED: it creates the database,
@@ -277,15 +277,15 @@ CREATE TABLE rent_reminder_log (
 -- SEED DATA
 -- =====================================================
 
--- Default admin (password: Admin@123 — change on first login)
+-- Default admin (password: Admin@123 - change on first login)
 INSERT INTO users (username, password, full_name, email, phone, role) VALUES
 ('admin', '$2y$10$68H/ROzsisuaxDQePhdQo.GXlUMdiSZWI6Hw2dveH7qHtqHcRAvYq', 'PK Admin', 'admin@pkluxury.com', '0241234567', 'admin');
 
--- Sample staff (password: Admin@123 — change on first login)
+-- Sample staff (password: Admin@123 - change on first login)
 INSERT INTO users (username, password, full_name, email, phone, role) VALUES
 ('staff1', '$2y$10$68H/ROzsisuaxDQePhdQo.GXlUMdiSZWI6Hw2dveH7qHtqHcRAvYq', 'Kofi Mensah', 'kofi@pkluxury.com', '0249876543', 'staff');
 
--- Sample tenants (password: Admin@123 — change on first login)
+-- Sample tenants (password: Admin@123 - change on first login)
 INSERT INTO users (username, password, full_name, email, phone, role) VALUES
 ('tenant1', '$2y$10$68H/ROzsisuaxDQePhdQo.GXlUMdiSZWI6Hw2dveH7qHtqHcRAvYq', 'Ama Asante', 'ama@email.com', '0245551234', 'tenant'),
 ('tenant2', '$2y$10$68H/ROzsisuaxDQePhdQo.GXlUMdiSZWI6Hw2dveH7qHtqHcRAvYq', 'Kwame Boateng', 'kwame@email.com', '0245555678', 'tenant');

@@ -115,7 +115,7 @@ include __DIR__ . '/includes/header.php';
                         <select name="room_id" class="form-control" id="addTenantRoom" required onchange="document.getElementById('addTenantRent').value=this.options[this.selectedIndex].dataset.price||''">
                             <option value="" disabled selected>Select a room</option>
                             <?php foreach ($rooms as $r): ?>
-                            <option value="<?= $r['id'] ?>" data-price="<?= $r['rental_price'] ?>"><?= sanitize($r['room_number']) ?> — <?= formatCurrency($r['rental_price']) ?>/<?= ($r['charge_period'] ?? 'monthly') === 'daily' ? 'day' : 'mo' ?></option>
+                            <option value="<?= $r['id'] ?>" data-price="<?= $r['rental_price'] ?>"><?= sanitize($r['room_number']) ?> &bull; <?= formatCurrency($r['rental_price']) ?>/<?= ($r['charge_period'] ?? 'monthly') === 'daily' ? 'day' : 'mo' ?></option>
                             <?php endforeach; ?>
                         </select>
                     </div>
@@ -141,7 +141,7 @@ include __DIR__ . '/includes/header.php';
 <div class="modal-overlay" id="assignResidenceModal">
     <div class="modal">
         <div class="modal-header">
-            <h3>Assign Residence — <span id="assignResidenceTenantName"></span></h3>
+            <h3>Assign Residence - <span id="assignResidenceTenantName"></span></h3>
             <button class="modal-close" onclick="closeModal('assignResidenceModal')">&times;</button>
         </div>
         <div class="modal-body">
@@ -153,7 +153,7 @@ include __DIR__ . '/includes/header.php';
                         <select name="room_id" class="form-control" id="assignResidenceRoom" required onchange="document.getElementById('assignResidenceRent').value=this.options[this.selectedIndex].dataset.price||''">
                             <option value="" disabled selected>Select a room</option>
                             <?php foreach ($rooms as $r): ?>
-                            <option value="<?= $r['id'] ?>" data-price="<?= $r['rental_price'] ?>"><?= sanitize($r['room_number']) ?> — <?= formatCurrency($r['rental_price']) ?>/<?= ($r['charge_period'] ?? 'monthly') === 'daily' ? 'day' : 'mo' ?></option>
+                            <option value="<?= $r['id'] ?>" data-price="<?= $r['rental_price'] ?>"><?= sanitize($r['room_number']) ?> &bull; <?= formatCurrency($r['rental_price']) ?>/<?= ($r['charge_period'] ?? 'monthly') === 'daily' ? 'day' : 'mo' ?></option>
                             <?php endforeach; ?>
                         </select>
                     </div>
@@ -233,8 +233,8 @@ function renderTenants(tenants) {
         <tr>
             <td style="font-weight:600;">${esc(t.full_name)}</td>
             <td>${esc(t.username)}</td>
-            <td>${esc(t.phone || '—')}</td>
-            <td>${esc(t.email || '—')}</td>
+            <td>${esc(t.phone || '-')}</td>
+            <td>${esc(t.email || '-')}</td>
             <td>${t.room_number
                 ? esc(t.room_number)
                 : '<span style="color:var(--warning);font-weight:600;">Unassigned</span>'}</td>
@@ -242,7 +242,7 @@ function renderTenants(tenants) {
                 ? '<span style="color:var(--danger);font-weight:700;">GH\u20B5 ' + Number(t.owing).toFixed(2) + '</span>'
                 : '<span class="text-muted" style="font-weight:600;color:var(--success);">Paid up</span>'}</td>
             <td><span class="badge badge-${t.is_active ? 'success' : 'danger'}">${t.is_active ? 'Active' : 'Inactive'}</span></td>
-            <td class="text-muted">${t.date_of_birth ? (() => { const d = new Date(t.date_of_birth); const age = Math.floor((Date.now() - d.getTime()) / 31557600000); return age + ' yrs'; })() : '—'}</td>
+            <td class="text-muted">${t.date_of_birth ? (() => { const d = new Date(t.date_of_birth); const age = Math.floor((Date.now() - d.getTime()) / 31557600000); return age + ' yrs'; })() : '-'}</td>
             <td class="text-muted">${new Date(t.created_at).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})}</td>
             <td>
                 <div style="display:flex;gap:6px;flex-wrap:wrap;">
@@ -265,7 +265,7 @@ async function submitTenant(e) {
     const form = new FormData(e.target);
     const dob = form.get('date_of_birth');
     if (!dob) {
-        showToast('Date of birth is required — the tenant must be at least 18 years old.', 'error');
+        showToast('Date of birth is required - the tenant must be at least 18 years old.', 'error');
         return;
     }
     if (calculateAge(dob) < 18) {
@@ -333,7 +333,7 @@ function formatBytes(b) {
 async function openAgreements(id) {
     const t = allTenants.find(x => x.id === id);
     document.getElementById('agreementTenantId').value = id;
-    document.getElementById('agreementModalTitle').textContent = 'Tenancy Agreements — ' + (t ? t.full_name : 'Tenant #' + id);
+    document.getElementById('agreementModalTitle').textContent = 'Tenancy Agreements - ' + (t ? t.full_name : 'Tenant #' + id);
     document.getElementById('agreementUploadForm').reset();
     await loadAgreements(id);
     openModal('agreementModal');

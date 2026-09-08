@@ -1,5 +1,5 @@
 <?php
-// Registration is closed to the public — tenant accounts are created by management, so just bounce back to login.
+// Registration is closed to the public - tenant accounts are created by management, so just bounce back to login.
 require_once __DIR__ . '/config/database.php';
 sendSecurityHeaders();
 

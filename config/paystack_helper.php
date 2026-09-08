@@ -35,7 +35,7 @@ function paystackVerify($reference) {
 }
 
 // Map a Paystack channel to the AMS payment_method value
-// (records the actual medium the tenant used — Momo, Bank, Card, etc.)
+// (records the actual medium the tenant used - Momo, Bank, Card, etc.)
 function paystackMethodFromChannel($channel) {
     $c = strtolower((string)$channel);
     if (in_array($c, ['mobile_money', 'momo', 'mobilemoney', 'mtn_mobile_money', 'vodafone_cash', 'airteltigo_money'])) {

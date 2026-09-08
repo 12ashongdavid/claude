@@ -1,5 +1,5 @@
 <?php
-// Shared page chrome: sidebar nav, top bar, and notifications — included at the top of every logged-in page.
+// Shared page chrome: sidebar nav, top bar, and notifications - included at the top of every logged-in page.
 require_once __DIR__ . '/../config/database.php';
 sendSecurityHeaders();
 $user = currentUser();
@@ -16,7 +16,7 @@ if ($user) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= isset($pageTitle) ? sanitize($pageTitle) . ' — ' : '' ?>PK's Luxury Apartments</title>
+    <title><?= isset($pageTitle) ? sanitize($pageTitle) . ' - ' : '' ?>PK's Luxury Apartments</title>
     <meta name="theme-color" content="#1B2A4A">
     <link rel="preconnect" href="https://unpkg.com" crossorigin>
     <link rel="stylesheet" href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css">

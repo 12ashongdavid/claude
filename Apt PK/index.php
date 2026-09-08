@@ -1,5 +1,5 @@
 <?php
-// Public landing page — showcases available residences and handles booking and report submissions.
+// Public landing page - showcases available residences and handles booking and report submissions.
 require_once __DIR__ . '/config/database.php';
 $db = getDB();
 
@@ -136,7 +136,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     header('Location: ' . $res['data']['authorization_url']);
                     exit;
                 }
-                // If Paystack init fails, the booking is still saved — just show success
+                // If Paystack init fails, the booking is still saved - just show success
             }
         }
     }
@@ -790,7 +790,7 @@ async function submitPublicReport(e) {
     btn.innerHTML = '<i class="bx bx-loader-alt bx-spin"></i> Sending...';
     btn.disabled = true;
     // This form can sit open a while as visitors browse rooms, so the
-    // original session may have expired by now — grab a fresh token
+    // original session may have expired by now - grab a fresh token
     // right before submitting instead of risking a stale one.
     try {
         const csrfRes = await fetch('api/csrf_token.php');
@@ -850,7 +850,7 @@ async function submitBookingModal(e) {
     btn.disabled = true;
     try {
         // This form can sit open a while as visitors browse rooms, so the
-        // original session may have expired by now — grab a fresh token
+        // original session may have expired by now - grab a fresh token
         // right before submitting instead of risking a stale one.
         try {
             const csrfRes = await fetch('api/csrf_token.php');
