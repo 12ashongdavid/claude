@@ -1,10 +1,10 @@
 <?php
 // Database connection, session setup, and the shared helper functions used everywhere else.
 
-define('DB_HOST', 'localhost');
-define('DB_NAME', 'pk_ams');
-define('DB_USER', 'root');
-define('DB_PASS', '');
+if (!defined('DB_HOST')) define('DB_HOST', 'localhost');
+if (!defined('DB_NAME')) define('DB_NAME', 'pk_ams');
+if (!defined('DB_USER')) define('DB_USER', 'root');
+if (!defined('DB_PASS')) define('DB_PASS', '');
 
 define('SITE_NAME', "PK's Luxury Apartments");
 
@@ -125,8 +125,13 @@ function _bootstrapDatabase() {
     }
 
     // Strip the CREATE DATABASE and USE lines — we already handled those
+    // ourselves above. setup.sql hardcodes its own database name in its USE
+    // statement, which won't match $dbName when installing under a different
+    // name (e.g. a shared host's prefixed DB name), so match USE generically
+    // rather than requiring it to equal $dbName — otherwise that stray USE
+    // silently redirects the rest of this script into the wrong database.
     $sql = preg_replace('/CREATE DATABASE[^;]+;/', '', $sql);
-    $sql = preg_replace('/USE\s+`?' . preg_quote($dbName, '/') . '`?\s*;/', '', $sql);
+    $sql = preg_replace('/USE\s+`?[a-zA-Z0-9_]+`?\s*;/', '', $sql);
 
     // Remove comment-only lines (-- ...) but keep statement lines
     $lines = explode("\n", $sql);
@@ -478,7 +483,7 @@ function getTenantNextDueMonth($tenantId) {
 }
 
 // Get the paid-through range as a human-readable string.
-// Returns e.g. "Aug 2026 — Oct 2026" or just "Aug 2026" for a single month.
+// Returns e.g. "Aug 2026 to Oct 2026" or just "Aug 2026" for a single month.
 function getTenantPaidThroughRange($tenantId) {
     $db = getDB();
     $stmt = $db->prepare("SELECT MIN(month_covered) AS min_month, MAX(month_covered) AS max_month FROM rent_payments WHERE tenant_id = ? AND status = 'completed'");
