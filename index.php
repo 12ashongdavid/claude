@@ -208,7 +208,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <i class='bx bx-moon'></i>
         </button>
         <a href="javascript:void(0)" class="btn-signin" onclick="openBookingModal()">Book Now</a>
-        <a href="login.php" class="btn-signin" style="background:transparent;border:1.5px solid rgba(255,255,255,0.3);">Sign In</a>
+        <a href="login.php" class="btn-signin btn-signin-outline">Sign In</a>
     </div>
 </nav>
 

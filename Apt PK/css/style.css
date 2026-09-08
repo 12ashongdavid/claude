@@ -1601,12 +1601,20 @@ textarea.form-control.is-invalid {
     background: linear-gradient(135deg, var(--accent), var(--accent-dark)) !important;
     color: #fff !important;
     padding: 8px 24px;
+    border: 1.5px solid transparent;
     border-radius: 10px;
     font-weight: 800 !important;
     box-shadow: 0 2px 14px rgba(201,162,39,0.32);
     transition: var(--t) !important;
     position: relative;
     overflow: hidden;
+}
+/* Outline variant (e.g. "Sign In" next to the solid "Book Now") — the
+   border is already reserved on the base class so swapping it from
+   transparent to visible here never changes the button's rendered size. */
+.btn-signin-outline {
+    background: transparent !important;
+    border-color: rgba(255,255,255,0.3);
 }
 .btn-signin::after {
     content: '';
