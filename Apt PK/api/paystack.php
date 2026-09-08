@@ -37,7 +37,7 @@ if (($_GET['action'] ?? '') === 'verify') {
         exit;
     }
 
-    setFlash('error', 'Payment was not completed — no charge was made. You can try again.');
+    setFlash('error', 'Payment was not completed - no charge was made. You can try again.');
     if ($from === 'utility') {
         header('Location: ../utilities.php?paid=0');
     } elseif ($from === 'booking') {

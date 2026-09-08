@@ -3,7 +3,7 @@
 Upgrade scripts for databases that already exist. Apply them **in order** (001 → 017),
 once each, from the `pk_ams` database.
 
-**New installs do not need these** — `setup.sql` at the project root already contains
+**New installs do not need these** - `setup.sql` at the project root already contains
 every table, column, and enum from all 17 migrations, plus seed data.
 
 ## Applying via phpMyAdmin

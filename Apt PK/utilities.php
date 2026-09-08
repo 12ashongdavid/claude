@@ -13,7 +13,7 @@ if (isset($_GET['paid'])) {
     if ($_GET['paid'] == 1) {
         setFlash('success', 'Utility bill paid successfully. Thank you!');
     } else {
-        setFlash('error', 'Payment was not completed — no charge was made. You can try again.');
+        setFlash('error', 'Payment was not completed - no charge was made. You can try again.');
     }
 }
 
@@ -219,7 +219,7 @@ function renderBills(bills) {
             <td style="font-weight:600;">GH&#8373; ${parseFloat(b.amount).toFixed(2)}</td>
             <td>${new Date(b.billing_month + '-01').toLocaleDateString('en-GB',{month:'long',year:'numeric'})}</td>
             <td><span class="badge badge-${b.status === 'paid' ? 'success' : (b.status === 'overdue' ? 'danger' : 'warning')}">${esc(b.status)}</span></td>
-            <td>${b.payment_date ? new Date(b.payment_date).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}) : '—'}</td>
+            <td>${b.payment_date ? new Date(b.payment_date).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}) : '-'}</td>
             ${isAdmin ? `<td>${b.status !== 'paid'
                 ? `<button class="btn btn-sm btn-success" onclick="openMarkPaid(${b.id})">Mark Paid</button>`
                 : `<a href="utility_receipt.php?id=${b.id}" target="_blank" class="btn btn-sm btn-primary"><i class='bx bx-printer'></i> Receipt</a>`}</td>`

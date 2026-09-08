@@ -103,8 +103,8 @@ function renderStaff(staff) {
         <tr>
             <td style="font-weight:600;">${esc(s.full_name)}</td>
             <td>${esc(s.username)}</td>
-            <td>${esc(s.phone || '—')}</td>
-            <td>${esc(s.email || '—')}</td>
+            <td>${esc(s.phone || '-')}</td>
+            <td>${esc(s.email || '-')}</td>
             <td><span class="badge badge-${s.is_active ? 'success' : 'danger'}">${s.is_active ? 'Active' : 'Inactive'}</span></td>
             <td class="text-muted">${new Date(s.created_at).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})}</td>
             <td style="white-space:nowrap;">

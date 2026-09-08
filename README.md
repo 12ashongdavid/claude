@@ -1,4 +1,4 @@
-# PK's Luxury Apartments — Apartment Management System
+# PK's Luxury Apartments - Apartment Management System
 
 ## Requirements
 
@@ -51,7 +51,7 @@ C:\xampp\mysql\bin\mysql -u root < "C:\xampp\htdocs\Apt PK\setup.sql"
 
 > `setup.sql` is self-contained (all tables, columns, and enums, plus seed data).
 > For **existing** databases, apply the ordered scripts in `database/migrations/`
-> instead — see `database/migrations/README.md`.
+> instead - see `database/migrations/README.md`.
 
 ### 4. Configure Database Connection
 
@@ -183,6 +183,6 @@ C:\xampp\php\php.exe -r "echo password_hash('Admin@123', PASSWORD_DEFAULT);"
 ## Automated Testing & Deployment
 
 Every push and pull request runs a lint + test + smoke-test pipeline
-automatically via GitHub Actions — see [DEPLOYMENT.md](DEPLOYMENT.md)
+automatically via GitHub Actions - see [DEPLOYMENT.md](DEPLOYMENT.md)
 for how to run the same tests locally and how to (optionally) enable
 automatic deployment to production.

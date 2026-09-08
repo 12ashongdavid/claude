@@ -177,7 +177,7 @@ if (!in_array(currentUser()['role'], ['admin', 'staff'])) {
 }
 
 // Always the true totals, regardless of any status/category filter applied
-// to the list below — the dashboard stat cards call this after every change.
+// to the list below - the dashboard stat cards call this after every change.
 if (($_GET['counts'] ?? '') === '1') {
     echo json_encode([
         'total' => (int) $db->query("SELECT COUNT(*) FROM feedback_reports")->fetchColumn(),

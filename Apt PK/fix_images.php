@@ -1,5 +1,5 @@
 <?php
-// One-off script to backfill rooms.image from room_images — run it once, then delete this file.
+// One-off script to backfill rooms.image from room_images - run it once, then delete this file.
 require_once __DIR__ . '/config/database.php';
 requireRole(['admin']);
 $db = getDB();

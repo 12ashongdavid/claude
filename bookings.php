@@ -1,5 +1,5 @@
 <?php
-// Admin/staff view of booking requests — approve or reject bookings and confirm their deposit payments.
+// Admin/staff view of booking requests - approve or reject bookings and confirm their deposit payments.
 require_once __DIR__ . '/config/database.php';
 $pageTitle = 'Booking Requests';
 requireRole(['admin', 'staff']);

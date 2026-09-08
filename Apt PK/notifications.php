@@ -1,5 +1,5 @@
 <?php
-// Notifications inbox — lets the logged-in user view and mark their notifications as read.
+// Notifications inbox - lets the logged-in user view and mark their notifications as read.
 require_once __DIR__ . '/config/database.php';
 $pageTitle = 'Notifications';
 requireLogin();

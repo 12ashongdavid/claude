@@ -115,7 +115,7 @@ final class ValidationTest extends TestCase
     public function testSendSmsRejectsInvalidInputWithoutContactingTheProvider(): void
     {
         // Guards against ever making a real network call to mNotify from the
-        // test suite — these all fail validation before any HTTP request.
+        // test suite - these all fail validation before any HTTP request.
         $this->assertFalse(sendSMS('12345', 'too short a phone number'));
         $this->assertFalse(sendSMS('0245551234', ''));
     }

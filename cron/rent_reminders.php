@@ -45,7 +45,7 @@ foreach ($tenancies as $t) {
     $stmt->execute([$t['tenant_id']]);
     $covered = $stmt->fetchColumn();
     if (!$covered) {
-        continue; // no paid month yet — nothing to remind about
+        continue; // no paid month yet - nothing to remind about
     }
 
     // The covered period expires on the LAST day of the covered month
@@ -53,10 +53,10 @@ foreach ($tenancies as $t) {
     $windowStart = $covered . '-01';
 
     if ($today < $windowStart) {
-        continue; // too early — reminder starts one month before expiry
+        continue; // too early - reminder starts one month before expiry
     }
     if ($today > $expiry) {
-        continue; // rent is over — reminders stop
+        continue; // rent is over - reminders stop
     }
 
     $days = (int)((strtotime($today) - strtotime($windowStart)) / 86400);
@@ -74,13 +74,13 @@ foreach ($tenancies as $t) {
     $monthLabel = date('F Y', strtotime($covered . '-01'));
     $expiryLabel = date('jS F Y', strtotime($expiry));
 
-    // Tenant — in-app + SMS
-    $tenantMsg = "Friendly reminder: your rent covering $monthLabel ends on $expiryLabel. Please pay before then to avoid interruption. — " . SITE_NAME;
+    // Tenant - in-app + SMS
+    $tenantMsg = "Friendly reminder: your rent covering $monthLabel ends on $expiryLabel. Please pay before then to avoid interruption. - " . SITE_NAME;
     $insNotifTenant->execute([$t['tenant_id'], $tenantMsg]);
-    sendSMS($t['phone'], "Dear " . $t['full_name'] . ", this is a friendly reminder that your rent covering $monthLabel ends on $expiryLabel. Please pay before then to avoid interruption. — " . SITE_NAME);
+    sendSMS($t['phone'], "Dear " . $t['full_name'] . ", this is a friendly reminder that your rent covering $monthLabel ends on $expiryLabel. Please pay before then to avoid interruption. - " . SITE_NAME);
 
-    // Admins — in-app + SMS
-    $adminMsg = "Rent due reminder: " . $t['full_name'] . " (Room " . $t['room_number'] . ") — $monthLabel ends $expiryLabel. Weekly reminder $week/4.";
+    // Admins - in-app + SMS
+    $adminMsg = "Rent due reminder: " . $t['full_name'] . " (Room " . $t['room_number'] . ") - $monthLabel ends $expiryLabel. Weekly reminder $week/4.";
     foreach ($admins as $admin) {
         $insNotifAdmin->execute([$admin['id'], $adminMsg]);
         sendSMS($admin['phone'], $adminMsg);
@@ -91,7 +91,7 @@ foreach ($tenancies as $t) {
     $due[] = $t['full_name'] . ' (' . $t['room_number'] . ')';
 }
 
-echo date('Y-m-d H:i:s') . " — rent reminders sent: $sent\n";
+echo date('Y-m-d H:i:s') . " - rent reminders sent: $sent\n";
 if ($sent > 0) {
     echo "Tenants reminded: " . implode(', ', $due) . "\n";
 }

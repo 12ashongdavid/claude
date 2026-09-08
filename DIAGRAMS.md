@@ -1,10 +1,10 @@
-# System Diagrams — PK's Luxury Apartments Management System
+# System Diagrams - PK's Luxury Apartments Management System
 
 Diagram source for this project's Entity-Relationship Diagram (ERD), Data
 Flow Diagrams (DFD), and Use Case Diagrams. Everything below is written in
 [Mermaid](https://mermaid.js.org) syntax, which renders automatically on
 GitHub, GitLab, VS Code (with the Mermaid extension), Notion, and Obsidian
-— no image files or extra tools needed. To export a PNG/SVG, paste any code
+- no image files or extra tools needed. To export a PNG/SVG, paste any code
 block into https://mermaid.live.
 
 Reflects the schema in `setup.sql` and the access rules in
@@ -14,8 +14,8 @@ Reflects the schema in `setup.sql` and the access rules in
 
 - [1. Entity Relationship Diagram](#1-entity-relationship-diagram)
 - [2. Data Flow Diagrams](#2-data-flow-diagrams)
-  - [2.1 Level 0 — Context Diagram](#21-level-0--context-diagram)
-  - [2.2 Level 1 — Major Processes](#22-level-1--major-processes)
+  - [2.1 Level 0 - Context Diagram](#21-level-0--context-diagram)
+  - [2.2 Level 1 - Major Processes](#22-level-1--major-processes)
 - [3. Use Case Diagrams](#3-use-case-diagrams)
   - [3.1 Public & Tenant](#31-public--tenant)
   - [3.2 Staff & Admin](#32-staff--admin)
@@ -241,14 +241,14 @@ erDiagram
 ```
 
 **Relationships not enforced as database foreign keys** (shown above for completeness, but validated in application code instead):
-- `rooms.room_type` matches `room_types.name` by value — checked against `SELECT name FROM room_types` in `api/rooms.php` rather than a `FOREIGN KEY` constraint, so room types can be renamed without a schema migration.
+- `rooms.room_type` matches `room_types.name` by value - checked against `SELECT name FROM room_types` in `api/rooms.php` rather than a `FOREIGN KEY` constraint, so room types can be renamed without a schema migration.
 - `paystack_transactions.tenant_id` / `.bill_id` are used only for idempotency lookups and audit history, not referential integrity.
 
 ---
 
 ## 2. Data Flow Diagrams
 
-### 2.1 Level 0 — Context Diagram
+### 2.1 Level 0 - Context Diagram
 
 ```mermaid
 flowchart TB
@@ -280,7 +280,7 @@ flowchart TB
     SMS -- "delivery status" --> System
 ```
 
-### 2.2 Level 1 — Major Processes
+### 2.2 Level 1 - Major Processes
 
 ```mermaid
 flowchart TB
@@ -363,7 +363,7 @@ flowchart TB
 
 ## 3. Use Case Diagrams
 
-Split into two diagrams by actor group — a single combined diagram with all
+Split into two diagrams by actor group - a single combined diagram with all
 23 use cases became too dense to read once Mermaid's auto-layout tried to
 place four actors and two external systems on the same canvas.
 
@@ -376,7 +376,7 @@ flowchart LR
     Paystack(["«system»\nPaystack"])
     SMS(["«system»\nmNotify SMS"])
 
-    subgraph SYS ["PK's Luxury Apartments Management System — Public & Tenant"]
+    subgraph SYS ["PK's Luxury Apartments Management System - Public & Tenant"]
         UC1((Browse Available\nResidences))
         UC2((Submit Booking\nRequest))
         UC3((Pay Booking\nDeposit))
@@ -427,7 +427,7 @@ flowchart LR
 
     Admin -. "inherits all\nStaff use cases" .-> Staff
 
-    subgraph SYS2 ["PK's Luxury Apartments Management System — Staff & Admin"]
+    subgraph SYS2 ["PK's Luxury Apartments Management System - Staff & Admin"]
         UC14((Log In))
         UC15((Manage Tenants))
         UC16((Manage Rooms))
@@ -460,6 +460,6 @@ flowchart LR
 
 **Actor notes:**
 - **Guest** covers any unauthenticated visitor on the public landing page (`index.php`).
-- **Admin** is a generalization of **Staff** — `staff.php` (manage staff accounts) and deleting a feedback report are the only screens gated to `role = 'admin'` specifically (`config/database.php`'s `requireRole()`); every other staff-facing screen accepts both roles.
-- Staff and Admin can only log in from a non-mobile user agent (`isMobileUserAgent()` in `config/database.php`) — that gate sits in front of every use case in their diagram, not drawn as a separate use case to keep things readable.
+- **Admin** is a generalization of **Staff** - `staff.php` (manage staff accounts) and deleting a feedback report are the only screens gated to `role = 'admin'` specifically (`config/database.php`'s `requireRole()`); every other staff-facing screen accepts both roles.
+- Staff and Admin can only log in from a non-mobile user agent (`isMobileUserAgent()` in `config/database.php`) - that gate sits in front of every use case in their diagram, not drawn as a separate use case to keep things readable.
 - **Paystack** and **mNotify SMS** are secondary (system) actors: the system calls out to them mid-use-case, they don't initiate anything themselves.

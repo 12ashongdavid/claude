@@ -1,5 +1,5 @@
 <?php
-// Public landing/booking page — lists available rooms and handles booking and report submissions.
+// Public landing/booking page - lists available rooms and handles booking and report submissions.
 require_once __DIR__ . '/config/database.php';
 sendSecurityHeaders();
 $db = getDB();
@@ -162,7 +162,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     header('Location: ' . $res['data']['authorization_url']);
                     exit;
                 }
-                // If Paystack init fails, the booking is still saved — just show success
+                // If Paystack init fails, the booking is still saved - just show success
             }
         }
     }
@@ -904,7 +904,7 @@ async function submitBookingModal(e) {
     btn.disabled = true;
     try {
         // This form can sit open a while as visitors browse rooms, so the
-        // original session may have expired by now — grab a fresh token
+        // original session may have expired by now - grab a fresh token
         // right before submitting instead of risking a stale one.
         try {
             const csrfRes = await fetch('api/csrf_token.php');

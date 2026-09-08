@@ -8,7 +8,7 @@ if (!defined('DB_PASS')) define('DB_PASS', '');
 
 define('SITE_NAME', "PK's Luxury Apartments");
 
-// Auto-detect base URL — always resolves to the site ROOT,
+// Auto-detect base URL - always resolves to the site ROOT,
 // even when this file is included from an /api/ script
 if (!defined('SITE_URL')) {
     $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
@@ -28,8 +28,8 @@ if (!defined('SITE_URL')) {
 define('UPLOAD_PATH', __DIR__ . '/../uploads/');
 
 // mNotify SMS settings
-define('MNOTIFY_API_KEY', 'WmR0TbwuaoDoDJmwm38qhysfz');
-define('MNOTIFY_SENDER_ID', 'PkluxuryAPT');
+define('MNOTIFY_API_KEY', 'ZejwthlGfumqriGeOxfex7tlO');
+define('MNOTIFY_SENDER_ID', 'PKLUXURY');
 define('MNOTIFY_ENDPOINT', 'https://api.mnotify.com/api/sms/quick');
 
 // Paystack settings (currently pointed at test keys)
@@ -75,7 +75,7 @@ function getDB() {
                 PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
                 PDO::ATTR_EMULATE_PREPARES => false,
             ]);
-            // Verify tables exist — if not, run bootstrap
+            // Verify tables exist - if not, run bootstrap
             $tables = $pdo->query("SHOW TABLES")->fetchAll(PDO::FETCH_COLUMN);
             if (empty($tables)) {
                 $pdo = _bootstrapDatabase();
@@ -124,11 +124,11 @@ function _bootstrapDatabase() {
         die("<h2>Cannot read setup.sql</h2>");
     }
 
-    // Strip the CREATE DATABASE and USE lines — we already handled those
+    // Strip the CREATE DATABASE and USE lines - we already handled those
     // ourselves above. setup.sql hardcodes its own database name in its USE
     // statement, which won't match $dbName when installing under a different
     // name (e.g. a shared host's prefixed DB name), so match USE generically
-    // rather than requiring it to equal $dbName — otherwise that stray USE
+    // rather than requiring it to equal $dbName - otherwise that stray USE
     // silently redirects the rest of this script into the wrong database.
     $sql = preg_replace('/CREATE DATABASE[^;]+;/', '', $sql);
     $sql = preg_replace('/USE\s+`?[a-zA-Z0-9_]+`?\s*;/', '', $sql);
@@ -258,7 +258,7 @@ function isLoggedIn() {
     return isset($_SESSION['user_id']);
 }
 
-// Admin/staff dashboard is desktop-only — phones and tablets are turned away.
+// Admin/staff dashboard is desktop-only - phones and tablets are turned away.
 // UA sniffing isn't spoof-proof, but this is a UX guardrail, not a security boundary.
 function isMobileUserAgent() {
     $ua = $_SERVER['HTTP_USER_AGENT'] ?? '';
@@ -320,7 +320,7 @@ function validatePhone($phone) {
 }
 
 // The webmail providers we accept outright, plus Ghanaian school/government
-// domains recognized by suffix — new institutions register under these
+// domains recognized by suffix - new institutions register under these
 // endings all the time, so listing every one by name would go stale fast.
 function getAcceptedEmailDomains() {
     return ['gmail.com', 'yahoo.com', 'outlook.com', 'hotmail.com', 'icloud.com', 'aol.com', 'protonmail.com'];
@@ -346,7 +346,7 @@ function isAcceptedEmailDomain($domain) {
 // The one place every email address in the app gets checked. Walks through
 // the checks in order and stops at the first thing wrong, so the message
 // always explains the actual problem instead of a generic "invalid email".
-// An empty value is treated as valid here — whether email is required at
+// An empty value is treated as valid here - whether email is required at
 // all is a decision for the caller, not this function.
 function validateEmailDetailed($email, $skipWhitelist = false) {
     $email = strtolower(trim($email));
@@ -590,7 +590,7 @@ function validateAgreementUpload($file, $maxSize = 10485760) {
 }
 
 // Map a validated upload MIME type to a fixed, safe file extension.
-// Never derive the saved extension from the client-supplied filename —
+// Never derive the saved extension from the client-supplied filename -
 // it's attacker-controlled and, combined with a content/MIME-matching
 // polyglot file, can turn an "image upload" into a way to drop a file
 // with an executable extension.
@@ -616,7 +616,7 @@ function sendSMS($phone, $message, $sender = MNOTIFY_SENDER_ID) {
 
     // mNotify concatenates long messages into multiple segments and
     // reassembles them on the recipient's phone, so 160 chars (one GSM-7
-    // segment) is not a hard limit — several of our own messages (account
+    // segment) is not a hard limit - several of our own messages (account
     // creation with credentials, the booking verification code) routinely
     // run past it. Cap generously instead of truncating real content.
     $maxLen = 918;

@@ -2,7 +2,7 @@
 // PHPUnit bootstrap. Points the app at a disposable test database and
 // resets it to a clean, known state (setup.sql's schema + seed data)
 // before every run, so tests never depend on whatever state a previous
-// run — or a developer's real pk_ams database — happened to be in.
+// run - or a developer's real pk_ams database - happened to be in.
 
 // These must be defined BEFORE config/database.php runs its own
 // define() calls: define() is a no-op on a constant that already
@@ -13,7 +13,7 @@ define('DB_USER', getenv('DB_USER') ?: 'root');
 define('DB_PASS', getenv('DB_PASS') ?: '');
 
 if (DB_NAME === 'pk_ams') {
-    fwrite(STDERR, "Refusing to run tests against the real 'pk_ams' database — set DB_NAME to a disposable test database.\n");
+    fwrite(STDERR, "Refusing to run tests against the real 'pk_ams' database - set DB_NAME to a disposable test database.\n");
     exit(1);
 }
 

@@ -180,7 +180,7 @@ include __DIR__ . '/includes/header.php';
                     <button class="btn btn-primary" id="saveTypeBtn" onclick="saveType()">Add</button>
                 </div>
                 <button type="button" class="btn btn-sm btn-outline" id="cancelEditTypeBtn" style="display:none;margin-top:8px;" onclick="cancelEditType()">&larr; Cancel Edit</button>
-                <small style="display:block;color:var(--text-muted);font-size:0.72rem;margin-top:6px;">Choose how this residence type is charged — monthly or daily.</small>
+                <small style="display:block;color:var(--text-muted);font-size:0.72rem;margin-top:6px;">Choose how this residence type is charged - monthly or daily.</small>
             </div>
             <div id="typeList" style="margin-top:16px;"></div>
         </div>
