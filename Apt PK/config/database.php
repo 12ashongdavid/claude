@@ -328,6 +328,17 @@ function validateAge($dob, $minAge = 18) {
     return $age !== null && $age >= $minAge;
 }
 
+// Whether a residence currently has a tenant actively living in it. A room's
+// tenancies, rent payments, utility bills, and maintenance history all
+// cascade-delete with it (see setup.sql's foreign keys), so callers use this
+// to refuse deleting a residence out from under its tenant.
+function roomHasActiveTenant($roomId) {
+    $db = getDB();
+    $stmt = $db->prepare("SELECT COUNT(*) FROM tenancies WHERE room_id = ? AND status = 'active'");
+    $stmt->execute([$roomId]);
+    return $stmt->fetchColumn() > 0;
+}
+
 // Months from month-string $a to month-string $b (b - a)
 function ymDiffMonths($a, $b) {
     $pa = array_map('intval', explode('-', $a));

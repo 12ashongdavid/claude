@@ -171,6 +171,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if ($action === 'delete') {
         $id = intval($_POST['id'] ?? 0);
+
+        if (roomHasActiveTenant($id)) {
+            echo json_encode(['error' => 'This residence has an active tenant and cannot be deleted. Deactivate the tenant or end their tenancy first.']);
+            exit;
+        }
+
         // Remove image files (primary + gallery)
         $old = $db->prepare("SELECT image FROM rooms WHERE id = ?");
         $old->execute([$id]);
