@@ -488,6 +488,8 @@ async function deleteRoom(id) {
         showToast('Residence deleted.', 'success');
         closeModal('editRoomModal');
         loadRooms();
+    } else {
+        showToast(data.error || 'Error deleting residence', 'error');
     }
 }
 
