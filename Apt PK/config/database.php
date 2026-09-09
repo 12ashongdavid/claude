@@ -29,7 +29,10 @@ define('UPLOAD_PATH', __DIR__ . '/../uploads/');
 
 // mNotify SMS settings
 define('MNOTIFY_API_KEY', 'ZejwthlGfumqriGeOxfex7tlO');
-define('MNOTIFY_SENDER_ID', 'PKLUXURY');
+// PKLUXURY is not yet an approved sender ID on this mNotify account (only
+// PkluxuryAPT is) - mNotify rejects unapproved sender IDs outright, so this
+// stays PkluxuryAPT until PKLUXURY is registered and approved with them.
+define('MNOTIFY_SENDER_ID', 'PkluxuryAPT');
 define('MNOTIFY_ENDPOINT', 'https://api.mnotify.com/api/sms/quick');
 
 // Paystack settings (currently pointed at test keys)
