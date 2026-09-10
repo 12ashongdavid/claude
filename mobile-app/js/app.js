@@ -445,7 +445,7 @@ async function renderProfile() {
         <div class="card">
             <h3>My Details</h3>
             <form id="profileForm">
-                <div class="form-group"><label>Full Name</label><input type="text" name="full_name" class="form-control" value="${esc(u.full_name)}" required></div>
+                <div class="form-group"><label>Full Name</label><input type="text" name="full_name" class="form-control" pattern="[A-Za-z\s'-]+" oninput="this.value=this.value.replace(/[0-9]/g,'')" value="${esc(u.full_name)}" required></div>
                 <div class="form-group"><label>Phone</label><input type="tel" name="phone" class="form-control" value="${esc(u.phone)}" pattern="[0-9]{10}" required></div>
                 <div class="form-group"><label>Email</label><input type="email" name="email" class="form-control" value="${esc(u.email || '')}" required></div>
                 <div id="profileMsg"></div>

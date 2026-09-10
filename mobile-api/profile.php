@@ -16,6 +16,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (empty($full_name) || empty($phone)) {
             mobileJsonOut(['error' => 'Name and phone are required.'], 400);
         }
+        if (!validateName($full_name)) {
+            mobileJsonOut(['error' => 'Name must contain letters only (no numbers).'], 400);
+        }
         if (!validatePhone($phone)) {
             mobileJsonOut(['error' => 'Phone number must contain exactly 10 digits (numbers only).'], 400);
         }
