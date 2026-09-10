@@ -148,7 +148,7 @@ include __DIR__ . '/includes/header.php';
                 <div class="form-row">
                     <div class="form-group">
                         <label>Assignee Name</label>
-                        <input type="text" name="assigned_name" id="updateAssignedName" class="form-control" placeholder="e.g. Kofi Mensah">
+                        <input type="text" name="assigned_name" id="updateAssignedName" class="form-control" placeholder="e.g. Kofi Mensah" pattern="[A-Za-z\s'\-]+" oninput="this.value=this.value.replace(/[0-9]/g,'')">
                     </div>
                     <div class="form-group">
                         <label>Assignee Phone</label>

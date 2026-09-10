@@ -22,6 +22,15 @@ final class ValidationTest extends TestCase
         $this->assertFalse(validatePhone('024555123a'));  // non-digit
     }
 
+    public function testValidateNameRejectsDigits(): void
+    {
+        $this->assertTrue(validateName('Kofi Mensah'));
+        $this->assertTrue(validateName("O'Brien-Smith"));
+        $this->assertFalse(validateName('Kofi2'));
+        $this->assertFalse(validateName('123'));
+        $this->assertFalse(validateName(''));
+    }
+
     public function testValidateEmailDetailedAcceptsAWhitelistedProvider(): void
     {
         $result = validateEmailDetailed('someone@gmail.com');

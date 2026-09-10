@@ -41,7 +41,7 @@ include __DIR__ . '/includes/header.php';
         <form id="profileForm" onsubmit="updateProfile(event)" enctype="multipart/form-data">
             <div class="form-group">
                 <label>Full Name *</label>
-                <input type="text" name="full_name" class="form-control" value="<?= sanitize($user['full_name']) ?>" required>
+                <input type="text" name="full_name" class="form-control" pattern="[A-Za-z\s'\-]+" oninput="this.value=this.value.replace(/[0-9]/g,'')" value="<?= sanitize($user['full_name']) ?>" required>
             </div>
             <div class="form-row">
                 <div class="form-group">

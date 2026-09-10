@@ -184,6 +184,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <div class="form-group">
                             <label>Full Name *</label>
                             <input type="text" name="full_name" class="form-control" placeholder="Your full name"
+                                pattern="[A-Za-z\s'\-]+" oninput="this.value=this.value.replace(/[0-9]/g,'')"
                                 value="<?= sanitize($user ? $user['full_name'] : ($_POST['full_name'] ?? '')) ?>" required>
                         </div>
                         <div class="form-group">

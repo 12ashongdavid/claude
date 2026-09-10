@@ -47,6 +47,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             echo json_encode(['error' => 'Your name is required.']);
             exit;
         }
+        if (!validateName($reporterName)) {
+            echo json_encode(['error' => 'Name must contain letters only (no numbers).']);
+            exit;
+        }
         if (!empty($reporterPhone) && !validatePhone($reporterPhone)) {
             echo json_encode(['error' => 'Phone number must be exactly 10 digits (numbers only).']);
             exit;
