@@ -77,7 +77,7 @@ include __DIR__ . '/includes/header.php';
                 <div class="form-row">
                     <div class="form-group">
                         <label>Full Name *</label>
-                        <input type="text" name="full_name" class="form-control" required>
+                        <input type="text" name="full_name" class="form-control" pattern="[A-Za-z\s'\-]+" oninput="this.value=this.value.replace(/[0-9]/g,'')" required>
                     </div>
                     <div class="form-group">
                         <label>Username *</label>

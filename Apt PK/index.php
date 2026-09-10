@@ -476,7 +476,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <div class="form-row">
                     <div class="form-group">
                         <label style="font-weight:700;font-size:0.85rem;">Your Name <span style="color:var(--danger);">*</span></label>
-                        <input type="text" name="reporter_name" class="form-control" placeholder="Full name" required maxlength="100">
+                        <input type="text" name="reporter_name" class="form-control" placeholder="Full name" pattern="[A-Za-z\s'\-]+" oninput="this.value=this.value.replace(/[0-9]/g,'')" required maxlength="100">
                     </div>
                     <div class="form-group">
                         <label style="font-weight:700;font-size:0.85rem;">Phone Number</label>
@@ -536,7 +536,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <div class="form-row">
                 <div class="form-group">
                     <label>Full Name *</label>
-                    <input type="text" name="full_name" class="form-control" placeholder="Your full name" value="<?= sanitize($_POST['full_name'] ?? '') ?>" required>
+                    <input type="text" name="full_name" class="form-control" placeholder="Your full name" pattern="[A-Za-z\s'\-]+" oninput="this.value=this.value.replace(/[0-9]/g,'')" value="<?= sanitize($_POST['full_name'] ?? '') ?>" required>
                 </div>
                 <div class="form-group">
                     <label>Phone Number *</label>

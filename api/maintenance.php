@@ -75,6 +75,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $assigned_name = trim($_POST['assigned_name'] ?? '');
         $assigned_phone = trim($_POST['assigned_phone'] ?? '');
 
+        if (!empty($assigned_name) && !validateName($assigned_name)) {
+            echo json_encode(['error' => 'Assignee name must contain letters only (no numbers).']);
+            exit;
+        }
         if (!empty($assigned_phone) && !validatePhone($assigned_phone)) {
             echo json_encode(['error' => 'Assignee phone must be exactly 10 digits.']);
             exit;

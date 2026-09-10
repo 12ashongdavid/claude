@@ -68,7 +68,7 @@ if ($user) {
                 <span class="icon"><i class='bx bx-bolt-circle'></i></span> Utility Bills
             </a>
 
-            <?php if ($user && in_array($user['role'], ['admin', 'staff'])): ?>
+            <?php if ($user && $user['role'] === 'admin'): ?>
             <div class="nav-section">Analytics</div>
             <a href="reports.php" class="<?= basename($_SERVER['PHP_SELF']) == 'reports.php' ? 'active' : '' ?>">
                 <span class="icon"><i class='bx bx-line-chart'></i></span> Reports

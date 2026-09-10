@@ -238,6 +238,11 @@ function validatePhone($phone) {
     return strlen($phone) === 10;
 }
 
+// Validate a person's name: letters, spaces, apostrophes, and hyphens only - no digits.
+function validateName($name) {
+    return (bool) preg_match("/^[A-Za-z\s'\-]+$/", trim($name));
+}
+
 // The webmail providers we accept outright, plus Ghanaian school/government
 // domains recognized by suffix - new institutions register under these
 // endings all the time, so listing every one by name would go stale fast.
