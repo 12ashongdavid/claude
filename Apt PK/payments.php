@@ -17,22 +17,22 @@ if (isset($_GET['paid'])) {
     }
 }
 
-// Get tenants and rooms for admin forms
+// Get tenants and apartments for admin forms
 if ($isAdmin) {
     $tenants = $db->query("SELECT id, full_name FROM users WHERE role='tenant' AND is_active=1 ORDER BY full_name")->fetchAll();
-    $rooms = $db->query("SELECT id, room_number, rental_price FROM rooms WHERE status='occupied' ORDER BY room_number")->fetchAll();
-    // Map each tenant to the residence in their active tenancy (one account = one residence)
-    $payTenantRooms = [];
-    $rows = $db->query("SELECT t.tenant_id, r.id AS room_id, r.room_number, r.rental_price FROM tenancies t JOIN rooms r ON t.room_id = r.id WHERE t.status = 'active'")->fetchAll();
+    $apartments = $db->query("SELECT id, apartment_number, rental_price FROM apartments WHERE status='occupied' ORDER BY apartment_number")->fetchAll();
+    // Map each tenant to the apartment in their active tenancy (one account = one apartment)
+    $payTenantApartments = [];
+    $rows = $db->query("SELECT t.tenant_id, r.id AS apartment_id, r.apartment_number, r.rental_price FROM tenancies t JOIN apartments r ON t.apartment_id = r.id WHERE t.status = 'active'")->fetchAll();
     foreach ($rows as $row) {
-        $payTenantRooms[$row['tenant_id']] = ['room_id' => intval($row['room_id']), 'room_number' => $row['room_number'], 'rental_price' => $row['rental_price']];
+        $payTenantApartments[$row['tenant_id']] = ['apartment_id' => intval($row['apartment_id']), 'apartment_number' => $row['apartment_number'], 'rental_price' => $row['rental_price']];
     }
 }
 
 // Tenant's active tenancy for the online payment form
 $tenancy = null;
 if (!$isAdmin) {
-    $stmt = $db->prepare("SELECT t.*, r.room_number, r.rental_price FROM tenancies t JOIN rooms r ON t.room_id = r.id WHERE t.tenant_id = ? AND t.status = 'active' ORDER BY t.id DESC LIMIT 1");
+    $stmt = $db->prepare("SELECT t.*, r.apartment_number, r.rental_price FROM tenancies t JOIN apartments r ON t.apartment_id = r.id WHERE t.tenant_id = ? AND t.status = 'active' ORDER BY t.id DESC LIMIT 1");
     $stmt->execute([$user['id']]);
     $tenancy = $stmt->fetch();
 }
@@ -94,7 +94,7 @@ include __DIR__ . '/includes/header.php';
 <div class="filter-bar">
     <div class="search-box">
         <span class="search-icon"><i class='bx bx-search'></i></span>
-        <input type="text" id="searchPayments" placeholder="Search by name, room, or reference..." oninput="filterPayments()">
+        <input type="text" id="searchPayments" placeholder="Search by name, apartment, or reference..." oninput="filterPayments()">
     </div>
     <input type="date" id="dateFrom" class="form-control" style="max-width:160px;" onchange="filterPayments()">
     <input type="date" id="dateTo" class="form-control" style="max-width:160px;" onchange="filterPayments()">
@@ -122,7 +122,7 @@ include __DIR__ . '/includes/header.php';
 <div class="card" style="border-left:4px solid var(--accent);">
     <div class="card-header">
         <h3><i class="bx bx-credit-card" style="vertical-align:-2px;color:var(--accent);"></i> Pay Rent Online</h3>
-        <span class="text-muted" style="font-size:0.82rem;">Residence <?= sanitize($tenancy['room_number']) ?></span>
+        <span class="text-muted" style="font-size:0.82rem;">Apartment <?= sanitize($tenancy['apartment_number']) ?></span>
     </div>
     <div class="card-body">
         <?php if ($fullyPaid): ?>
@@ -164,7 +164,7 @@ include __DIR__ . '/includes/header.php';
         <div class="empty-state">
             <div class="empty-icon"><i class="bx bx-building-house"></i></div>
             <h4>No active tenancy</h4>
-            <p class="text-muted">You do not have an active residence assignment yet. Contact management.</p>
+            <p class="text-muted">You do not have an active apartment assignment yet. Contact management.</p>
         </div>
     </div>
 </div>
@@ -180,7 +180,7 @@ include __DIR__ . '/includes/header.php';
             <thead>
                 <tr>
                     <?php if ($isAdmin): ?><th>Tenant</th><?php endif; ?>
-                    <th>Residence</th>
+                    <th>Apartment</th>
                     <th>Amount</th>
                     <th>Date</th>
                     <th>Month Covered</th>
@@ -210,7 +210,7 @@ include __DIR__ . '/includes/header.php';
                 <div class="form-row">
                     <div class="form-group">
                         <label>Tenant *</label>
-                        <select name="tenant_id" class="form-control" required onchange="autoFillRoom(this.value)">
+                        <select name="tenant_id" class="form-control" required onchange="autoFillApartment(this.value)">
                             <option value="">Select tenant...</option>
                             <?php foreach ($tenants as $t): ?>
                             <option value="<?= $t['id'] ?>"><?= sanitize($t['full_name']) ?></option>
@@ -218,14 +218,14 @@ include __DIR__ . '/includes/header.php';
                         </select>
                     </div>
                     <div class="form-group">
-                        <label>Room *</label>
-                        <select name="room_id" id="payRoomId" class="form-control" required>
-                            <option value="">Select room...</option>
-                            <?php foreach ($rooms as $r): ?>
-                            <option value="<?= $r['id'] ?>" data-price="<?= $r['rental_price'] ?>"><?= sanitize($r['room_number']) ?> &bull; <?= formatCurrency($r['rental_price']) ?></option>
+                        <label>Apartment *</label>
+                        <select name="apartment_id" id="payApartmentId" class="form-control" required>
+                            <option value="">Select apartment...</option>
+                            <?php foreach ($apartments as $r): ?>
+                            <option value="<?= $r['id'] ?>" data-price="<?= $r['rental_price'] ?>"><?= sanitize($r['apartment_number']) ?> &bull; <?= formatCurrency($r['rental_price']) ?></option>
                             <?php endforeach; ?>
                         </select>
-                        <small id="payRoomHint" style="color:var(--text-muted);font-size:0.72rem;"></small>
+                        <small id="payApartmentHint" style="color:var(--text-muted);font-size:0.72rem;"></small>
                     </div>
                 </div>
                 <div class="form-row">
@@ -294,7 +294,7 @@ function filterPayments() {
     const dateTo = document.getElementById('dateTo')?.value || '';
 
     let filtered = allPayments.filter(p => {
-        if (search && !p.tenant_name.toLowerCase().includes(search) && !p.room_number.toLowerCase().includes(search) && !(p.reference_number || '').toLowerCase().includes(search)) return false;
+        if (search && !p.tenant_name.toLowerCase().includes(search) && !p.apartment_number.toLowerCase().includes(search) && !(p.reference_number || '').toLowerCase().includes(search)) return false;
         if (dateFrom && p.payment_date < dateFrom) return false;
         if (dateTo && p.payment_date > dateTo) return false;
         return true;
@@ -314,7 +314,7 @@ function renderPayments(payments) {
     tbody.innerHTML = payments.map(p => `
         <tr>
             ${isAdmin ? `<td>${esc(p.tenant_name)}</td>` : ''}
-            <td>${esc(p.room_number)}</td>
+            <td>${esc(p.apartment_number)}</td>
             <td style="font-weight:600;color:var(--success);">GH&#8373; ${parseFloat(p.amount).toLocaleString('en',{minimumFractionDigits:2})}</td>
             <td>${new Date(p.payment_date).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})}</td>
             <td>${esc(p.month_covered)}</td>
@@ -326,27 +326,27 @@ function renderPayments(payments) {
     `).join('');
 }
 
-const payTenantRooms = <?= json_encode($payTenantRooms ?? []) ?>;
+const payTenantApartments = <?= json_encode($payTenantApartments ?? []) ?>;
 
-function autoFillRoom(tenantId) {
-    const roomSelect = document.getElementById('payRoomId');
-    const info = payTenantRooms[tenantId];
+function autoFillApartment(tenantId) {
+    const apartmentSelect = document.getElementById('payApartmentId');
+    const info = payTenantApartments[tenantId];
     if (info) {
-        roomSelect.value = info.room_id;
-        roomSelect.disabled = true;
-        document.getElementById('payRoomHint').textContent = 'Residence ' + info.room_number + ' auto-selected from this tenant\'s active tenancy.';
+        apartmentSelect.value = info.apartment_id;
+        apartmentSelect.disabled = true;
+        document.getElementById('payApartmentHint').textContent = 'Apartment ' + info.apartment_number + ' auto-selected from this tenant\'s active tenancy.';
     } else {
-        roomSelect.value = '';
-        roomSelect.disabled = false;
-        document.getElementById('payRoomHint').textContent = '';
+        apartmentSelect.value = '';
+        apartmentSelect.disabled = false;
+        document.getElementById('payApartmentHint').textContent = '';
     }
 }
 
 async function submitPayment(e) {
     e.preventDefault();
     const form = new FormData(e.target);
-    const roomSelect = document.getElementById('payRoomId');
-    if (roomSelect.disabled && roomSelect.value) form.append('room_id', roomSelect.value);
+    const apartmentSelect = document.getElementById('payApartmentId');
+    if (apartmentSelect.disabled && apartmentSelect.value) form.append('apartment_id', apartmentSelect.value);
     form.append('action', 'record');
     form.append('csrf_token', getCsrfToken());
     const res = await fetch('api/payments.php', { method: 'POST', body: form });
@@ -355,8 +355,8 @@ async function submitPayment(e) {
         showToast('Payment recorded! Reference: ' + data.reference, 'success');
         closeModal('recordPaymentModal');
         e.target.reset();
-        roomSelect.disabled = false;
-        document.getElementById('payRoomHint').textContent = '';
+        apartmentSelect.disabled = false;
+        document.getElementById('payApartmentHint').textContent = '';
         loadPayments();
     } else {
         showToast(data.error || 'Error recording payment', 'error');

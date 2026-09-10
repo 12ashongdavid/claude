@@ -8,12 +8,12 @@ $db = getDB();
 $user = currentUser();
 $isAdmin = in_array($user['role'], ['admin', 'staff']);
 
-// Tenant's rooms
-$myRooms = [];
+// Tenant's apartments
+$myApartments = [];
 if (!$isAdmin) {
-    $stmt = $db->prepare("SELECT r.id, r.room_number FROM tenancies t JOIN rooms r ON t.room_id = r.id WHERE t.tenant_id = ? AND t.status = 'active'");
+    $stmt = $db->prepare("SELECT r.id, r.apartment_number FROM tenancies t JOIN apartments r ON t.apartment_id = r.id WHERE t.tenant_id = ? AND t.status = 'active'");
     $stmt->execute([$user['id']]);
-    $myRooms = $stmt->fetchAll();
+    $myApartments = $stmt->fetchAll();
 }
 
 include __DIR__ . '/includes/header.php';
@@ -37,7 +37,7 @@ include __DIR__ . '/includes/header.php';
     </select>
     <?php endif; ?>
 
-    <?php if ($myRooms): ?>
+    <?php if ($myApartments): ?>
     <button class="btn btn-primary" onclick="openModal('submitReqModal')">+ Submit Request</button>
     <?php endif; ?>
 </div>
@@ -51,7 +51,7 @@ include __DIR__ . '/includes/header.php';
             <thead>
                 <tr>
                     <?php if ($isAdmin): ?><th>Tenant</th><?php endif; ?>
-                    <th>Residence</th>
+                    <th>Apartment</th>
                     <th>Category</th>
                     <th>Subject</th>
                     <th>Priority</th>
@@ -77,10 +77,10 @@ include __DIR__ . '/includes/header.php';
             <form id="submitReqForm" onsubmit="submitRequest(event)">
                 <div class="form-row">
                     <div class="form-group">
-                        <label>Room *</label>
-                        <select name="room_id" class="form-control" required>
-                            <?php foreach ($myRooms as $r): ?>
-                            <option value="<?= $r['id'] ?>"><?= sanitize($r['room_number']) ?></option>
+                        <label>Apartment *</label>
+                        <select name="apartment_id" class="form-control" required>
+                            <?php foreach ($myApartments as $r): ?>
+                            <option value="<?= $r['id'] ?>"><?= sanitize($r['apartment_number']) ?></option>
                             <?php endforeach; ?>
                         </select>
                     </div>
@@ -214,7 +214,7 @@ function renderReqs(reqs) {
     tbody.innerHTML = reqs.map(r => `
         <tr style="cursor:pointer;" onclick="viewDetail(${r.id})">
             ${isAdmin ? `<td>${esc(r.tenant_name)}</td>` : ''}
-            <td>${esc(r.room_number)}</td>
+            <td>${esc(r.apartment_number)}</td>
             <td>${esc(r.category.replace('_',' ')).replace(/\b\w/g,c=>c.toUpperCase())}</td>
             <td>${esc(r.subject)}</td>
             <td><span class="badge badge-${priorityColors[r.priority] || 'secondary'}">${esc(r.priority)}</span></td>
@@ -235,7 +235,7 @@ function viewDetail(id) {
     document.getElementById('detailTitle').textContent = r.subject;
     document.getElementById('detailBody').innerHTML = `
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
-            <div><strong>Room:</strong> ${esc(r.room_number)}</div>
+            <div><strong>Apartment:</strong> ${esc(r.apartment_number)}</div>
             <div><strong>Category:</strong> ${esc(r.category.replace('_',' '))}</div>
             <div><strong>Priority:</strong> <span class="badge badge-${priorityColors[r.priority]}">${esc(r.priority)}</span></div>
             <div><strong>Status:</strong> <span class="badge badge-${statusColors[r.status]}">${esc(r.status.replace('_',' '))}</span></div>

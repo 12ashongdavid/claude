@@ -11,7 +11,7 @@ if (!$id) {
 }
 
 // Fetch payment
-$stmt = $db->prepare("SELECT rp.*, u.full_name as tenant_name, u.phone as tenant_phone, u.email as tenant_email, r.room_number, r.room_type, au.full_name as received_by_name FROM rent_payments rp JOIN users u ON rp.tenant_id = u.id JOIN rooms r ON rp.room_id = r.id LEFT JOIN users au ON rp.received_by = au.id WHERE rp.id = ?");
+$stmt = $db->prepare("SELECT rp.*, u.full_name as tenant_name, u.phone as tenant_phone, u.email as tenant_email, r.apartment_number, r.apartment_type, au.full_name as received_by_name FROM rent_payments rp JOIN users u ON rp.tenant_id = u.id JOIN apartments r ON rp.apartment_id = r.id LEFT JOIN users au ON rp.received_by = au.id WHERE rp.id = ?");
 $stmt->execute([$id]);
 $payment = $stmt->fetch();
 
@@ -142,8 +142,8 @@ if ($user['role'] === 'tenant' && $payment['tenant_id'] != $user['id']) {
             <span class="value"><?= sanitize($payment['tenant_phone'] ?? 'N/A') ?></span>
         </div>
         <div class="receipt-row" style="border-bottom-color:#D4D6E5;">
-            <span class="label">Room Number</span>
-            <span class="value"><?= sanitize($payment['room_number']) ?> (<?= sanitize(ucfirst($payment['room_type'])) ?>)</span>
+            <span class="label">Apartment Number</span>
+            <span class="value"><?= sanitize($payment['apartment_number']) ?> (<?= sanitize(ucfirst($payment['apartment_type'])) ?>)</span>
         </div>
         <div class="receipt-row" style="border-bottom:none;">
             <span class="label">Month Covered</span>

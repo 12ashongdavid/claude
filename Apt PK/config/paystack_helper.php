@@ -87,7 +87,7 @@ function paystackRecordPayment($reference) {
         $month = preg_match('/^\d{4}-\d{2}$/', (string)($meta['month_covered'] ?? '')) ? $meta['month_covered'] : date('Y-m');
         $months = max(1, min(12, intval($meta['months'] ?? 1)));
 
-        $stmt = $db->prepare("SELECT room_id FROM tenancies WHERE tenant_id = ? AND status = 'active' ORDER BY id DESC LIMIT 1");
+        $stmt = $db->prepare("SELECT apartment_id FROM tenancies WHERE tenant_id = ? AND status = 'active' ORDER BY id DESC LIMIT 1");
         $stmt->execute([$tenantId]);
         $ten = $stmt->fetch();
         if (!$ten) {
@@ -100,7 +100,7 @@ function paystackRecordPayment($reference) {
         $existing->execute([$tenantId]);
         $coveredSet = array_flip($existing->fetchAll(PDO::FETCH_COLUMN));
         $perMonth = round($amount / $months, 2);
-        $stmtIns = $db->prepare("INSERT INTO rent_payments (tenant_id, room_id, amount, payment_date, payment_method, reference_number, month_covered, status, notes) VALUES (?, ?, ?, ?, ?, ?, ?, 'completed', 'Auto-recorded via Paystack')");
+        $stmtIns = $db->prepare("INSERT INTO rent_payments (tenant_id, apartment_id, amount, payment_date, payment_method, reference_number, month_covered, status, notes) VALUES (?, ?, ?, ?, ?, ?, ?, 'completed', 'Auto-recorded via Paystack')");
         $endMonth = $month;
         $lastPaymentId = 0;
         for ($i = 0; $i < $months; $i++) {
@@ -108,7 +108,7 @@ function paystackRecordPayment($reference) {
             if (isset($coveredSet[$m])) {
                 return ['status' => 'duplicate', 'kind' => 'rent'];
             }
-            $stmtIns->execute([$tenantId, $ten['room_id'], $perMonth, $paidAt, $method, $reference, $m]);
+            $stmtIns->execute([$tenantId, $ten['apartment_id'], $perMonth, $paidAt, $method, $reference, $m]);
             $lastPaymentId = (int)$db->lastInsertId();
             $endMonth = $m;
             $coveredSet[$m] = true;

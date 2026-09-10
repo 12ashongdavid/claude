@@ -42,11 +42,11 @@ $billRevenue = round((float)$bills['revenue'], 2);
 $billCount = (int)$bills['cnt'];
 
 // --- Combined transaction rows (newest first) ---
-$stmt = $db->prepare("SELECT rp.payment_date AS d, 'rent' AS kind, u.full_name AS tenant, r.room_number AS room, rp.reference_number AS ref, rp.payment_method AS method, rp.amount AS amount, rp.month_covered AS note FROM rent_payments rp JOIN users u ON rp.tenant_id = u.id JOIN rooms r ON rp.room_id = r.id WHERE rp.status='completed' $where");
+$stmt = $db->prepare("SELECT rp.payment_date AS d, 'rent' AS kind, u.full_name AS tenant, r.apartment_number AS apartment, rp.reference_number AS ref, rp.payment_method AS method, rp.amount AS amount, rp.month_covered AS note FROM rent_payments rp JOIN users u ON rp.tenant_id = u.id JOIN apartments r ON rp.apartment_id = r.id WHERE rp.status='completed' $where");
 $stmt->execute($params);
 $rentRows = $stmt->fetchAll();
 
-$stmt = $db->prepare("SELECT ub.payment_date AS d, 'utility' AS kind, u.full_name AS tenant, r.room_number AS room, CONCAT('UBIL-', ub.id) AS ref, ub.payment_method AS method, ub.amount AS amount, ub.billing_month AS note FROM utility_bills ub JOIN users u ON ub.tenant_id = u.id JOIN rooms r ON ub.room_id = r.id WHERE ub.status='paid' $uWhere");
+$stmt = $db->prepare("SELECT ub.payment_date AS d, 'utility' AS kind, u.full_name AS tenant, r.apartment_number AS apartment, CONCAT('UBIL-', ub.id) AS ref, ub.payment_method AS method, ub.amount AS amount, ub.billing_month AS note FROM utility_bills ub JOIN users u ON ub.tenant_id = u.id JOIN apartments r ON ub.apartment_id = r.id WHERE ub.status='paid' $uWhere");
 $stmt->execute($uParams);
 $utilRows = $stmt->fetchAll();
 

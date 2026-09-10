@@ -152,13 +152,13 @@ if (!in_array($user['role'], ['admin', 'staff'])) {
     exit;
 }
 $sql = "SELECT a.id, a.tenant_id, a.original_name, a.file_size, a.file_type, a.notes, a.created_at,
-               u.full_name AS tenant_name, u.username AS tenant_username, ru.room_number,
+               u.full_name AS tenant_name, u.username AS tenant_username, ru.apartment_number,
                up.full_name AS uploaded_by_name
         FROM tenant_agreements a
         JOIN users u ON a.tenant_id = u.id
         LEFT JOIN users up ON a.uploaded_by = up.id
         LEFT JOIN tenancies t ON t.tenant_id = a.tenant_id AND t.status = 'active'
-        LEFT JOIN rooms ru ON t.room_id = ru.id
+        LEFT JOIN apartments ru ON t.apartment_id = ru.id
         WHERE 1=1";
 $params = [];
 if (!empty($_GET['tenant_id'])) {

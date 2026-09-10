@@ -44,8 +44,8 @@ if ($user) {
 
             <?php if ($user && in_array($user['role'], ['admin', 'staff'])): ?>
             <div class="nav-section">Management</div>
-            <a href="rooms.php" class="<?= basename($_SERVER['PHP_SELF']) == 'rooms.php' ? 'active' : '' ?>">
-                <span class="icon"><i class='bx bx-door-open'></i></span> Residence
+            <a href="apartments.php" class="<?= basename($_SERVER['PHP_SELF']) == 'apartments.php' ? 'active' : '' ?>">
+                <span class="icon"><i class='bx bx-door-open'></i></span> Apartments
             </a>
             <a href="tenants.php" class="<?= basename($_SERVER['PHP_SELF']) == 'tenants.php' ? 'active' : '' ?>">
                 <span class="icon"><i class='bx bx-group'></i></span> Tenants

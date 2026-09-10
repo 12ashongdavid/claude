@@ -41,13 +41,13 @@ erDiagram
     USERS ||--o{ ANNOUNCEMENTS : "creates (as admin/staff)"
     USERS ||--o{ RENT_REMINDER_LOG : "is reminded"
 
-    ROOMS ||--o{ TENANCIES : "is assigned in"
-    ROOMS ||--o{ RENT_PAYMENTS : "is paid for"
-    ROOMS ||--o{ UTILITY_BILLS : "is billed for"
-    ROOMS ||--o{ MAINTENANCE_REQUESTS : "is reported for"
-    ROOMS ||--o{ ROOM_IMAGES : "has gallery"
-    ROOMS |o--o{ BOOKING_REQUESTS : "is requested (optional)"
-    ROOM_TYPES ||--o{ ROOMS : "categorizes (by name, app-enforced)"
+    APARTMENTS ||--o{ TENANCIES : "is assigned in"
+    APARTMENTS ||--o{ RENT_PAYMENTS : "is paid for"
+    APARTMENTS ||--o{ UTILITY_BILLS : "is billed for"
+    APARTMENTS ||--o{ MAINTENANCE_REQUESTS : "is reported for"
+    APARTMENTS ||--o{ APARTMENT_IMAGES : "has gallery"
+    APARTMENTS |o--o{ BOOKING_REQUESTS : "is requested (optional)"
+    APARTMENT_TYPES ||--o{ APARTMENTS : "categorizes (by name, app-enforced)"
 
     USERS {
         int id PK
@@ -66,10 +66,10 @@ erDiagram
         timestamp updated_at
     }
 
-    ROOMS {
+    APARTMENTS {
         int id PK
-        varchar room_number UK
-        varchar room_type "matches room_types.name"
+        varchar apartment_number UK
+        varchar apartment_type "matches apartment_types.name"
         int floor
         decimal size_sqm
         decimal rental_price
@@ -80,7 +80,7 @@ erDiagram
         timestamp created_at
     }
 
-    ROOM_TYPES {
+    APARTMENT_TYPES {
         int id PK
         varchar name UK
         enum charge_period "monthly, daily"
@@ -90,7 +90,7 @@ erDiagram
     TENANCIES {
         int id PK
         int tenant_id FK
-        int room_id FK
+        int apartment_id FK
         date start_date
         date end_date
         decimal monthly_rent
@@ -102,7 +102,7 @@ erDiagram
     RENT_PAYMENTS {
         int id PK
         int tenant_id FK
-        int room_id FK
+        int apartment_id FK
         decimal amount
         date payment_date
         enum payment_method "cash, mobile_money, bank_transfer, cheque, card, ussd, qr, paystack"
@@ -117,7 +117,7 @@ erDiagram
     UTILITY_BILLS {
         int id PK
         int tenant_id FK
-        int room_id FK
+        int apartment_id FK
         enum bill_type "water, electricity"
         decimal amount
         varchar billing_month "YYYY-MM"
@@ -130,7 +130,7 @@ erDiagram
     MAINTENANCE_REQUESTS {
         int id PK
         int tenant_id FK
-        int room_id FK
+        int apartment_id FK
         enum category "plumbing, electrical, structural, pest_control, appliance, other"
         varchar subject
         text description
@@ -156,9 +156,9 @@ erDiagram
         timestamp created_at
     }
 
-    ROOM_IMAGES {
+    APARTMENT_IMAGES {
         int id PK
-        int room_id FK
+        int apartment_id FK
         varchar image
         timestamp created_at
     }
@@ -179,7 +179,7 @@ erDiagram
         varchar full_name
         varchar email
         varchar phone
-        int room_id FK
+        int apartment_id FK
         date preferred_date
         text message
         enum payment_type "none, down_payment, full_payment"
@@ -241,7 +241,7 @@ erDiagram
 ```
 
 **Relationships not enforced as database foreign keys** (shown above for completeness, but validated in application code instead):
-- `rooms.room_type` matches `room_types.name` by value - checked against `SELECT name FROM room_types` in `api/rooms.php` rather than a `FOREIGN KEY` constraint, so room types can be renamed without a schema migration.
+- `apartments.apartment_type` matches `apartment_types.name` by value - checked against `SELECT name FROM apartment_types` in `api/apartments.php` rather than a `FOREIGN KEY` constraint, so apartment types can be renamed without a schema migration.
 - `paystack_transactions.tenant_id` / `.bill_id` are used only for idempotency lookups and audit history, not referential integrity.
 
 ---
@@ -267,10 +267,10 @@ flowchart TB
     Tenant -- "login, rent/utility payment, maintenance request, profile edits" --> System
     System -- "dashboard data, receipts, notifications" --> Tenant
 
-    Staff -- "tenant/room updates, recorded payments, maintenance actions" --> System
+    Staff -- "tenant/apartment updates, recorded payments, maintenance actions" --> System
     System -- "tenant records, task lists" --> Staff
 
-    Admin -- "staff/room-type management, announcements" --> System
+    Admin -- "staff/apartment-type management, announcements" --> System
     System -- "system-wide reports" --> Admin
 
     System -- "initialize/verify transaction" --> Paystack
@@ -293,14 +293,14 @@ flowchart TB
 
     P1(("1.0\nManage Bookings"))
     P2(("2.0\nAuthenticate &\nManage Accounts"))
-    P3(("3.0\nManage Rooms\n& Tenancies"))
+    P3(("3.0\nManage Apartments\n& Tenancies"))
     P4(("4.0\nProcess Rent\n& Utility Payments"))
     P5(("5.0\nHandle Maintenance\nRequests"))
     P6(("6.0\nManage Notifications\n& Announcements"))
     P7(("7.0\nHandle Feedback\n& Reports"))
 
     D1[("D1 Users")]
-    D2[("D2 Rooms /\nRoom Types")]
+    D2[("D2 Apartments /\nApartment Types")]
     D3[("D3 Tenancies")]
     D4[("D4 Rent Payments /\nUtility Bills")]
     D5[("D5 Maintenance\nRequests")]
@@ -314,7 +314,7 @@ flowchart TB
     P1 -- "verify/init payment" --> Paystack
     Paystack -- "payment result" --> P1
     P1 -- "confirmation" --> Guest
-    P1 -- "read available rooms" --> D2
+    P1 -- "read available apartments" --> D2
 
     Tenant -- "credentials" --> P2
     Staff -- "credentials" --> P2
@@ -324,8 +324,8 @@ flowchart TB
     P2 -- "session/token" --> Staff
     P2 -- "session/token" --> Admin
 
-    Admin -- "room/tenant/staff edits" --> P3
-    Staff -- "room/tenant edits" --> P3
+    Admin -- "apartment/tenant/staff edits" --> P3
+    Staff -- "apartment/tenant edits" --> P3
     P3 -- "read/write" --> D2
     P3 -- "read/write" --> D3
     P3 -- "read" --> D1
@@ -377,7 +377,7 @@ flowchart LR
     SMS(["«system»\nmNotify SMS"])
 
     subgraph SYS ["PK's Luxury Apartments Management System - Public & Tenant"]
-        UC1((Browse Available\nResidences))
+        UC1((Browse Available\nApartments))
         UC2((Submit Booking\nRequest))
         UC3((Pay Booking\nDeposit))
         UC4((Submit Public\nReport))
@@ -430,7 +430,7 @@ flowchart LR
     subgraph SYS2 ["PK's Luxury Apartments Management System - Staff & Admin"]
         UC14((Log In))
         UC15((Manage Tenants))
-        UC16((Manage Rooms))
+        UC16((Manage Apartments))
         UC17((Record Rent /\nUtility Payment))
         UC18((Confirm Booking\nPayment))
         UC19((Manage Maintenance\nRequests))
@@ -438,7 +438,7 @@ flowchart LR
         UC21((View Reports))
         UC22((Reply to\nFeedback))
         UC23((Manage Staff\nAccounts))
-        UC24((Manage Room\nTypes))
+        UC24((Manage Apartment\nTypes))
     end
 
     Staff --> UC14

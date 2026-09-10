@@ -33,23 +33,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             exit;
         }
 
-        // Residence is resolved from the tenant's active tenancy (one tenant = one residence)
-        $stmt = $db->prepare("SELECT room_id FROM tenancies WHERE tenant_id = ? AND status = 'active' ORDER BY id DESC LIMIT 1");
+        // Apartment is resolved from the tenant's active tenancy (one tenant = one apartment)
+        $stmt = $db->prepare("SELECT apartment_id FROM tenancies WHERE tenant_id = ? AND status = 'active' ORDER BY id DESC LIMIT 1");
         $stmt->execute([$tenant_id]);
         $ten = $stmt->fetch();
-        if (!$ten || !$ten['room_id']) {
-            echo json_encode(['error' => 'This tenant has no active residence. Assign a room first.']);
+        if (!$ten || !$ten['apartment_id']) {
+            echo json_encode(['error' => 'This tenant has no active apartment. Assign an apartment first.']);
             exit;
         }
-        $room_id = intval($ten['room_id']);
+        $apartment_id = intval($ten['apartment_id']);
 
         if (!preg_match('/^\d{4}-\d{2}$/', $billing_month) || $billing_month > date('Y-m')) {
             echo json_encode(['error' => 'Billing month cannot be in the future.']);
             exit;
         }
 
-        $stmt = $db->prepare("INSERT INTO utility_bills (tenant_id, room_id, bill_type, amount, billing_month) VALUES (?, ?, ?, ?, ?)");
-        $stmt->execute([$tenant_id, $room_id, $bill_type, $amount, $billing_month]);
+        $stmt = $db->prepare("INSERT INTO utility_bills (tenant_id, apartment_id, bill_type, amount, billing_month) VALUES (?, ?, ?, ?, ?)");
+        $stmt->execute([$tenant_id, $apartment_id, $bill_type, $amount, $billing_month]);
 
         // Notify tenant in-app and by SMS
         $stmt = $db->prepare("SELECT full_name, phone FROM users WHERE id = ?");
@@ -99,7 +99,7 @@ if (!in_array($user['role'], ['admin', 'staff'])) {
 $month = $_GET['billing_month'] ?? '';
 $status = $_GET['status'] ?? '';
 
-$sql = "SELECT ub.*, u.full_name as tenant_name, r.room_number FROM utility_bills ub JOIN users u ON ub.tenant_id = u.id JOIN rooms r ON ub.room_id = r.id WHERE 1=1";
+$sql = "SELECT ub.*, u.full_name as tenant_name, r.apartment_number FROM utility_bills ub JOIN users u ON ub.tenant_id = u.id JOIN apartments r ON ub.apartment_id = r.id WHERE 1=1";
 $params = [];
 
 if ($tenant_filter) {

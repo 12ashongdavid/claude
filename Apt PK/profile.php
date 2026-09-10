@@ -10,7 +10,7 @@ $user = currentUser();
 // Get tenancy info for tenants
 $tenancy = null;
 if ($user['role'] === 'tenant') {
-    $stmt = $db->prepare("SELECT t.*, r.room_number, r.room_type FROM tenancies t JOIN rooms r ON t.room_id = r.id WHERE t.tenant_id = ? AND t.status = 'active'");
+    $stmt = $db->prepare("SELECT t.*, r.apartment_number, r.apartment_type FROM tenancies t JOIN apartments r ON t.apartment_id = r.id WHERE t.tenant_id = ? AND t.status = 'active'");
     $stmt->execute([$user['id']]);
     $tenancy = $stmt->fetch();
 }
@@ -115,7 +115,7 @@ include __DIR__ . '/includes/header.php';
         <div class="card">
             <div class="card-header"><h3>Current Tenancy</h3></div>
             <div style="display:flex;flex-direction:column;gap:10px;font-size:0.9rem;">
-                <div><strong>Room:</strong> <?= sanitize($tenancy['room_number']) ?> (<?= ucfirst($tenancy['room_type']) ?>)</div>
+                <div><strong>Apartment:</strong> <?= sanitize($tenancy['apartment_number']) ?> (<?= ucfirst($tenancy['apartment_type']) ?>)</div>
                 <div><strong>Monthly Rent:</strong> <?= formatCurrency($tenancy['monthly_rent']) ?></div>
                 <div><strong>Start:</strong> <?= date('M j, Y', strtotime($tenancy['start_date'])) ?></div>
                 <div><strong>End:</strong> <?= $tenancy['end_date'] ? date('M j, Y', strtotime($tenancy['end_date'])) : 'N/A' ?></div>

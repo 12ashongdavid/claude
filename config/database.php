@@ -415,14 +415,14 @@ function validateAge($dob, $minAge = 18) {
     return $age !== null && $age >= $minAge;
 }
 
-// Whether a residence currently has a tenant actively living in it. A room's
+// Whether an apartment currently has a tenant actively living in it. An apartment's
 // tenancies, rent payments, utility bills, and maintenance history all
 // cascade-delete with it (see setup.sql's foreign keys), so callers use this
-// to refuse deleting a residence out from under its tenant.
-function roomHasActiveTenant($roomId) {
+// to refuse deleting an apartment out from under its tenant.
+function apartmentHasActiveTenant($apartmentId) {
     $db = getDB();
-    $stmt = $db->prepare("SELECT COUNT(*) FROM tenancies WHERE room_id = ? AND status = 'active'");
-    $stmt->execute([$roomId]);
+    $stmt = $db->prepare("SELECT COUNT(*) FROM tenancies WHERE apartment_id = ? AND status = 'active'");
+    $stmt->execute([$apartmentId]);
     return $stmt->fetchColumn() > 0;
 }
 

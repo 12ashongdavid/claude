@@ -119,7 +119,7 @@ if ($type === 'rent') {
         exit;
     }
 
-    $stmt = $db->prepare("SELECT room_id, monthly_rent FROM tenancies WHERE tenant_id = ? AND status = 'active' ORDER BY id DESC LIMIT 1");
+    $stmt = $db->prepare("SELECT apartment_id, monthly_rent FROM tenancies WHERE tenant_id = ? AND status = 'active' ORDER BY id DESC LIMIT 1");
     $stmt->execute([$user['id']]);
     $ten = $stmt->fetch();
     if (!$ten) {

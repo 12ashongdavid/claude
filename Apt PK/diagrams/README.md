@@ -21,7 +21,7 @@ Management System (AMS).
 High-level architecture running on XAMPP (Apache + PHP + MySQL):
 
 - **Clients** - Tenant / Staff / Admin browsers
-- **Application layer** - PHP pages (landing, dashboard, rooms, tenants,
+- **Application layer** - PHP pages (landing, dashboard, apartments, tenants,
   payments, utilities, maintenance, reports) and REST API endpoints under `/api/`
 - **Paystack webhook** and **cron** rent-reminder job
 - **Data layer** - MySQL `pk_ams` database + `uploads/` file store
@@ -32,10 +32,10 @@ High-level architecture running on XAMPP (Apache + PHP + MySQL):
 
 Actors and their capabilities:
 
-- **Visitor** - browse residences, submit booking request
+- **Visitor** - browse apartments, submit booking request
 - **Tenant** - login, dashboard, pay rent & utilities, maintenance requests,
   notifications, receipts, profile
-- **Staff** - manage residences, tenants, bookings, payments, utilities,
+- **Staff** - manage apartments, tenants, bookings, payments, utilities,
   maintenance, announcements
 - **Admin** - everything Staff can do, plus staff management and reports/analytics
 - **System** - rent reminders (SMS + in-app) and Paystack payment processing
@@ -44,18 +44,18 @@ Actors and their capabilities:
 
 All tables from `setup.sql` and the migration scripts:
 
-`users`, `rooms`, `room_types`, `tenancies`, `rent_payments`,
-`utility_bills`, `maintenance_requests`, `notifications`, `room_images`,
+`users`, `apartments`, `apartment_types`, `tenancies`, `rent_payments`,
+`utility_bills`, `maintenance_requests`, `notifications`, `apartment_images`,
 `booking_requests`, `tenant_agreements`, `announcements`,
 `paystack_transactions`, `rent_reminder_log`.
 
 Key relationships:
 
-- `users` (tenant) 1-N `tenancies` N-1 `rooms`
+- `users` (tenant) 1-N `tenancies` N-1 `apartments`
 - `users` 1-N `rent_payments` / `utility_bills` / `maintenance_requests`
   / `notifications` / `tenant_agreements` / `announcements`
-- `rooms` 1-N `room_images` / `booking_requests`
-- `room_types` 1-N `rooms` (classifies room types)
+- `apartments` 1-N `apartment_images` / `booking_requests`
+- `apartment_types` 1-N `apartments` (classifies apartment types)
 
 ### 4. Site Map (`site_map.mmd`)
 
@@ -64,7 +64,7 @@ Navigation hierarchy with role-based access:
 - **Public** - Landing page (`index.php`), Login, Register (disabled)
 - **All logged-in users** - Dashboard, Payments, Utilities, Maintenance,
   Notifications, Profile, Receipts
-- **Admin & Staff** - Residences, Tenants, Bookings, Maintenance, Payments,
+- **Admin & Staff** - Apartments, Tenants, Bookings, Maintenance, Payments,
   Reports, Announcements
 - **Admin only** - Staff Management (`staff.php`)
 
@@ -72,7 +72,7 @@ Navigation hierarchy with role-based access:
 
 Five core workflows through the system:
 
-1. **Tenant Onboarding** - booking request → staff approval → tenant registration → room assignment → welcome SMS → first login
+1. **Tenant Onboarding** - booking request → staff approval → tenant registration → apartment assignment → welcome SMS → first login
 2. **Rent Payment** - online path (Paystack checkout → webhook → verify → record) and manual path (staff records → receipt)
 3. **Utility Bill Payment** - staff records bill → tenant pays online (Paystack) or staff records manual payment → receipt
 4. **Maintenance Request** - tenant submits → staff assigns technician → resolve or reassign → tenant closes

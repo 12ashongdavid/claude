@@ -6,7 +6,7 @@ $db = getDB();
 $user = isLoggedIn() ? currentUser() : null;
 $paymentEnabled = true;
 
-$availableRooms = $db->query("SELECT r.*, rt.charge_period FROM rooms r LEFT JOIN room_types rt ON rt.name = r.room_type WHERE r.status = 'available' ORDER BY r.rental_price ASC")->fetchAll();
+$availableApartments = $db->query("SELECT r.*, rt.charge_period FROM apartments r LEFT JOIN apartment_types rt ON rt.name = r.apartment_type WHERE r.status = 'available' ORDER BY r.rental_price ASC")->fetchAll();
 
 $success = '';
 $error = '';
@@ -19,7 +19,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $full_name = trim($_POST['full_name'] ?? '');
         $email = trim($_POST['email'] ?? '');
         $phone = trim($_POST['phone'] ?? '');
-        $room_id = !empty($_POST['room_id']) ? intval($_POST['room_id']) : null;
+        $apartment_id = !empty($_POST['apartment_id']) ? intval($_POST['apartment_id']) : null;
         $preferred_date = $_POST['preferred_date'] ?? null;
         $message = trim($_POST['message'] ?? '');
         $payment_type = $_POST['payment_type'] ?? 'none';
@@ -39,14 +39,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $payment_reference = '';
             $payment_status = 'pending';
 
-            if ($payment_type !== 'none' && $room_id) {
-                $room = $db->prepare("SELECT rental_price FROM rooms WHERE id = ?");
-                $room->execute([$room_id]);
-                $roomData = $room->fetch();
-                if ($roomData) {
+            if ($payment_type !== 'none' && $apartment_id) {
+                $apartment = $db->prepare("SELECT rental_price FROM apartments WHERE id = ?");
+                $apartment->execute([$apartment_id]);
+                $apartmentData = $apartment->fetch();
+                if ($apartmentData) {
                     $payment_amount = $payment_type === 'down_payment'
-                        ? round(floatval($roomData['rental_price']) * 0.5, 2)
-                        : round(floatval($roomData['rental_price']), 2);
+                        ? round(floatval($apartmentData['rental_price']) * 0.5, 2)
+                        : round(floatval($apartmentData['rental_price']), 2);
                 }
             }
 
@@ -56,19 +56,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $payment_status = 'pending';
             }
 
-            $stmt = $db->prepare("INSERT INTO booking_requests (full_name, email, phone, room_id, preferred_date, message, payment_type, payment_amount, payment_method, payment_reference, payment_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-            $stmt->execute([$full_name, $email, $phone, $room_id, $preferred_date, $message, $payment_type, $payment_amount, $payment_method, $payment_reference, $payment_status]);
+            $stmt = $db->prepare("INSERT INTO booking_requests (full_name, email, phone, apartment_id, preferred_date, message, payment_type, payment_amount, payment_method, payment_reference, payment_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            $stmt->execute([$full_name, $email, $phone, $apartment_id, $preferred_date, $message, $payment_type, $payment_amount, $payment_method, $payment_reference, $payment_status]);
             $bookingId = $db->lastInsertId();
 
-            // Mark residence as occupied when a booking with payment is made
-            if ($payment_type !== 'none' && $room_id) {
-                $db->prepare("UPDATE rooms SET status = 'occupied' WHERE id = ? AND status = 'available'")->execute([$room_id]);
+            // Mark apartment as occupied when a booking with payment is made
+            if ($payment_type !== 'none' && $apartment_id) {
+                $db->prepare("UPDATE apartments SET status = 'occupied' WHERE id = ? AND status = 'available'")->execute([$apartment_id]);
             }
 
             $admins = $db->query("SELECT id, phone FROM users WHERE role = 'admin'")->fetchAll();
-            $room_label = $room_id ? " (Residence #" . $room_id . ")" : "";
+            $apartment_label = $apartment_id ? " (Apartment #" . $apartment_id . ")" : "";
             $payment_note = $payment_type !== 'none' ? " Payment: " . formatCurrency($payment_amount) . "." : "";
-            $notifMsg = "$full_name has submitted a booking request$room_label.$payment_note";
+            $notifMsg = "$full_name has submitted a booking request$apartment_label.$payment_note";
             if ($admins) {
                 $placeholders = implode(',', array_fill(0, count($admins), '(?, ?, ?, ?)'));
                 $notifSql = "INSERT INTO notifications (user_id, title, message, type) VALUES $placeholders";
@@ -80,7 +80,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $notifParams[] = 'info';
                 }
                 $db->prepare($notifSql)->execute($notifParams);
-                sendSMS($admins[0]['phone'], "New booking request from $full_name$room_label. Phone: $phone." . $payment_note);
+                sendSMS($admins[0]['phone'], "New booking request from $full_name$apartment_label. Phone: $phone." . $payment_note);
             }
 
             sendSMS($phone, "Dear $full_name, your booking request has been received" . ($payment_type !== 'none' ? " with a payment of " . formatCurrency($payment_amount) : "") . ". PK's Luxury Apartments will contact you within 24 hours.");
@@ -118,7 +118,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Book a Residence | PK's Luxury Apartments</title>
+    <title>Book an Apartment | PK's Luxury Apartments</title>
     <link rel="preconnect" href="https://unpkg.com" crossorigin>
     <link rel="stylesheet" href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css">
     <link rel="stylesheet" href="css/style.css?v=18">
@@ -200,15 +200,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     </div>
                     <div class="form-row">
                         <div class="form-group">
-                            <label>Preferred Residence *</label>
-                            <select name="room_id" id="bookingRoomSelect" class="form-control" required onchange="updateBookingPrice()">
-                                <option value="">Select a residence...</option>
-                                <?php foreach ($availableRooms as $r): ?>
+                            <label>Preferred Apartment *</label>
+                            <select name="apartment_id" id="bookingApartmentSelect" class="form-control" required onchange="updateBookingPrice()">
+                                <option value="">Select an apartment...</option>
+                                <?php foreach ($availableApartments as $r): ?>
                                 <option value="<?= $r['id'] ?>"
                                     data-price="<?= $r['rental_price'] ?>"
                                     data-period="<?= ($r['charge_period'] ?? 'monthly') === 'daily' ? 'day' : 'month' ?>"
-                                    <?= (isset($_POST['room_id']) && $_POST['room_id'] == $r['id']) ? 'selected' : '' ?>>
-                                    <?= sanitize($r['room_number']) ?> &bull; <?= ucfirst($r['room_type']) ?> &bull; GH&#8373; <?= number_format($r['rental_price'], 0) ?>/<?= ($r['charge_period'] ?? 'monthly') === 'daily' ? 'day' : 'mo' ?>
+                                    <?= (isset($_POST['apartment_id']) && $_POST['apartment_id'] == $r['id']) ? 'selected' : '' ?>>
+                                    <?= sanitize($r['apartment_number']) ?> &bull; <?= ucfirst($r['apartment_type']) ?> &bull; GH&#8373; <?= number_format($r['rental_price'], 0) ?>/<?= ($r['charge_period'] ?? 'monthly') === 'daily' ? 'day' : 'mo' ?>
                                 </option>
                                 <?php endforeach; ?>
                             </select>
@@ -227,10 +227,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 <!-- Step 2: Payment -->
                 <div id="step2" style="display:none;">
-                    <div id="selectedRoomSummary" style="padding:16px;background:var(--surface);border-radius:var(--radius);margin-bottom:20px;text-align:center;">
-                        <div style="font-size:0.82rem;color:var(--text-muted);margin-bottom:4px;">Selected Residence</div>
-                        <div id="summaryRoomName" style="font-weight:700;font-size:1.05rem;"></div>
-                        <div id="summaryRoomPrice" class="price-display"></div>
+                    <div id="selectedApartmentSummary" style="padding:16px;background:var(--surface);border-radius:var(--radius);margin-bottom:20px;text-align:center;">
+                        <div style="font-size:0.82rem;color:var(--text-muted);margin-bottom:4px;">Selected Apartment</div>
+                        <div id="summaryApartmentName" style="font-weight:700;font-size:1.05rem;"></div>
+                        <div id="summaryApartmentPrice" class="price-display"></div>
                     </div>
 
                     <div class="form-group">
@@ -285,7 +285,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     let selectedPeriod = 'month';
 
     function updateBookingPrice() {
-        const sel = document.getElementById('bookingRoomSelect');
+        const sel = document.getElementById('bookingApartmentSelect');
         const opt = sel.options[sel.selectedIndex];
         if (opt && opt.value) {
             selectedPrice = parseFloat(opt.dataset.price) || 0;
@@ -298,16 +298,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     function goToStep2() {
-        const room = document.getElementById('bookingRoomSelect').value;
-        if (!room) { alert('Please select a residence.'); return; }
+        const apartment = document.getElementById('bookingApartmentSelect').value;
+        if (!apartment) { alert('Please select an apartment.'); return; }
         const name = document.querySelector('input[name="full_name"]').value.trim();
         const phone = document.querySelector('input[name="phone"]').value.trim();
         if (!name || !phone) { alert('Please provide your name and phone number.'); return; }
         if (!/^[0-9]{10}$/.test(phone)) { alert('Phone number must be exactly 10 digits (numbers only).'); return; }
 
-        const sel = document.getElementById('bookingRoomSelect');
-        document.getElementById('summaryRoomName').textContent = sel.options[sel.selectedIndex].text;
-        document.getElementById('summaryRoomPrice').textContent = fmtCcy(selectedPrice) + '/' + selectedPeriod;
+        const sel = document.getElementById('bookingApartmentSelect');
+        document.getElementById('summaryApartmentName').textContent = sel.options[sel.selectedIndex].text;
+        document.getElementById('summaryApartmentPrice').textContent = fmtCcy(selectedPrice) + '/' + selectedPeriod;
 
         updateBookingPrice();
 
