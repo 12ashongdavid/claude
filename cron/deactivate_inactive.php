@@ -37,18 +37,18 @@ foreach ($inactiveUsers as $u) {
         $upd->execute([$u['id']]);
 
         // End any active tenancy
-        $roomIds = $db->prepare("SELECT room_id FROM tenancies WHERE tenant_id = ? AND status = 'active'");
-        $roomIds->execute([$u['id']]);
-        $freedRooms = $roomIds->fetchAll(PDO::FETCH_COLUMN);
+        $apartmentIds = $db->prepare("SELECT apartment_id FROM tenancies WHERE tenant_id = ? AND status = 'active'");
+        $apartmentIds->execute([$u['id']]);
+        $freedApartments = $apartmentIds->fetchAll(PDO::FETCH_COLUMN);
 
         $tenancy = $db->prepare("UPDATE tenancies SET status = 'terminated', end_date = CURDATE() WHERE tenant_id = ? AND status = 'active'");
         $tenancy->execute([$u['id']]);
 
-        // Free up their room(s)
-        if ($freedRooms) {
-            $placeholders = implode(',', array_fill(0, count($freedRooms), '?'));
-            $tenanted = $db->prepare("UPDATE rooms SET status = 'available' WHERE id IN ($placeholders) AND status = 'occupied'");
-            $tenanted->execute($freedRooms);
+        // Free up their apartment(s)
+        if ($freedApartments) {
+            $placeholders = implode(',', array_fill(0, count($freedApartments), '?'));
+            $tenanted = $db->prepare("UPDATE apartments SET status = 'available' WHERE id IN ($placeholders) AND status = 'occupied'");
+            $tenanted->execute($freedApartments);
         }
 
         // Log notification

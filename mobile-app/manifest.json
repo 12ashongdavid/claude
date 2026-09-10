@@ -1,7 +1,7 @@
 {
   "name": "PK's Luxury Apartments",
   "short_name": "PK's",
-  "description": "Pay rent and utilities, request maintenance, and stay updated on your residence.",
+  "description": "Pay rent and utilities, request maintenance, and stay updated on your apartment.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",

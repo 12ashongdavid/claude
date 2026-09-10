@@ -71,7 +71,7 @@ Change these if your MySQL uses a different user/password.
 Ensure these folders exist and are writable:
 
 ```
-uploads/rooms/
+uploads/apartments/
 uploads/profiles/
 ```
 
@@ -133,12 +133,12 @@ Apt PK/
 ├── api/                      # RESTful API endpoints
 ├── css/style.css             # All styles
 ├── js/app.js                 # JS: sidebar, modals, toasts, CSRF
-├── uploads/                  # User uploads (rooms, profiles)
+├── uploads/                  # User uploads (apartments, profiles)
 ├── index.php                 # Landing page
 ├── login.php                 # Login page
 ├── register.php              # Tenant self-registration
 ├── dashboard.php             # Role-based dashboard
-├── rooms.php                 # Room management
+├── apartments.php                 # Apartment management
 ├── tenants.php               # Tenant management
 ├── bookings.php              # Booking requests
 ├── payments.php              # Rent payments

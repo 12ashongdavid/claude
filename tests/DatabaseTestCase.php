@@ -24,26 +24,26 @@ abstract class DatabaseTestCase extends TestCase
         parent::tearDown();
     }
 
-    /** Insert a tenant + room + active tenancy, returning their ids. */
-    protected function makeTenantWithRoom(string $label, float $monthlyRent, string $startDate): array
+    /** Insert a tenant + apartment + active tenancy, returning their ids. */
+    protected function makeTenantWithApartment(string $label, float $monthlyRent, string $startDate): array
     {
         $this->db->prepare("INSERT INTO users (username, password, full_name, email, phone, role) VALUES (?, 'x', ?, ?, '0200000000', 'tenant')")
             ->execute(["test_$label", "Test $label", "test_$label@example.com"]);
         $tenantId = (int) $this->db->lastInsertId();
 
-        $this->db->prepare("INSERT INTO rooms (room_number, rental_price, status) VALUES (?, ?, 'occupied')")
+        $this->db->prepare("INSERT INTO apartments (apartment_number, rental_price, status) VALUES (?, ?, 'occupied')")
             ->execute(["TST-$label", $monthlyRent]);
-        $roomId = (int) $this->db->lastInsertId();
+        $apartmentId = (int) $this->db->lastInsertId();
 
-        $this->db->prepare("INSERT INTO tenancies (tenant_id, room_id, start_date, monthly_rent, status) VALUES (?, ?, ?, ?, 'active')")
-            ->execute([$tenantId, $roomId, $startDate, $monthlyRent]);
+        $this->db->prepare("INSERT INTO tenancies (tenant_id, apartment_id, start_date, monthly_rent, status) VALUES (?, ?, ?, ?, 'active')")
+            ->execute([$tenantId, $apartmentId, $startDate, $monthlyRent]);
 
-        return [$tenantId, $roomId];
+        return [$tenantId, $apartmentId];
     }
 
-    protected function addCompletedPayment(int $tenantId, int $roomId, string $monthCovered, float $amount): void
+    protected function addCompletedPayment(int $tenantId, int $apartmentId, string $monthCovered, float $amount): void
     {
-        $this->db->prepare("INSERT INTO rent_payments (tenant_id, room_id, amount, payment_date, payment_method, month_covered, status) VALUES (?, ?, ?, CURDATE(), 'cash', ?, 'completed')")
-            ->execute([$tenantId, $roomId, $amount, $monthCovered]);
+        $this->db->prepare("INSERT INTO rent_payments (tenant_id, apartment_id, amount, payment_date, payment_method, month_covered, status) VALUES (?, ?, ?, CURDATE(), 'cash', ?, 'completed')")
+            ->execute([$tenantId, $apartmentId, $amount, $monthCovered]);
     }
 }

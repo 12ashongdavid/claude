@@ -95,7 +95,7 @@ tables on first request, same as the website.
 ## What's intentionally not here
 
 This is the tenant experience only, matching how the feature was scoped.
-Admin/staff tools (managing tenants, rooms, reports, etc.) stay on the
+Admin/staff tools (managing tenants, apartments, reports, etc.) stay on the
 website. If that ever needs to change, the same bearer-token pattern
 extends cleanly - `requireMobileAuth()` would just need a role check
 added, the way the website's own pages use `requireRole()`.

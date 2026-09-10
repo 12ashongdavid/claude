@@ -5,7 +5,7 @@ $pageTitle = 'Tenants';
 requireRole(['admin', 'staff']);
 
 $db = getDB();
-$rooms = $db->query("SELECT r.id, r.room_number, r.rental_price, rt.charge_period FROM rooms r LEFT JOIN room_types rt ON rt.name = r.room_type WHERE r.status='available' ORDER BY r.room_number")->fetchAll();
+$apartments = $db->query("SELECT r.id, r.apartment_number, r.rental_price, rt.charge_period FROM apartments r LEFT JOIN apartment_types rt ON rt.name = r.apartment_type WHERE r.status='available' ORDER BY r.apartment_number")->fetchAll();
 
 // Arrears summary for active tenants
 $totalOwing = 0.0;
@@ -52,7 +52,7 @@ include __DIR__ . '/includes/header.php';
                     <th>Username</th>
                     <th>Phone</th>
                     <th>Email</th>
-                    <th>Residence</th>
+                    <th>Apartment</th>
                     <th>Balance Owing</th>
                     <th>Status</th>
                     <th>Age</th>
@@ -108,14 +108,14 @@ include __DIR__ . '/includes/header.php';
                     </div>
                 </div>
                 <hr style="border-color:var(--border);margin:16px 0;">
-                <h4 style="font-size:0.95rem;margin-bottom:12px;color:var(--text);">Room Allocation</h4>
+                <h4 style="font-size:0.95rem;margin-bottom:12px;color:var(--text);">Apartment Allocation</h4>
                 <div class="form-row">
                     <div class="form-group">
-                        <label>Room *</label>
-                        <select name="room_id" class="form-control" id="addTenantRoom" required onchange="document.getElementById('addTenantRent').value=this.options[this.selectedIndex].dataset.price||''">
-                            <option value="" disabled selected>Select a room</option>
-                            <?php foreach ($rooms as $r): ?>
-                            <option value="<?= $r['id'] ?>" data-price="<?= $r['rental_price'] ?>"><?= sanitize($r['room_number']) ?> &bull; <?= formatCurrency($r['rental_price']) ?>/<?= ($r['charge_period'] ?? 'monthly') === 'daily' ? 'day' : 'mo' ?></option>
+                        <label>Apartment *</label>
+                        <select name="apartment_id" class="form-control" id="addTenantApartment" required onchange="document.getElementById('addTenantRent').value=this.options[this.selectedIndex].dataset.price||''">
+                            <option value="" disabled selected>Select an apartment</option>
+                            <?php foreach ($apartments as $r): ?>
+                            <option value="<?= $r['id'] ?>" data-price="<?= $r['rental_price'] ?>"><?= sanitize($r['apartment_number']) ?> &bull; <?= formatCurrency($r['rental_price']) ?>/<?= ($r['charge_period'] ?? 'monthly') === 'daily' ? 'day' : 'mo' ?></option>
                             <?php endforeach; ?>
                         </select>
                     </div>
@@ -137,29 +137,29 @@ include __DIR__ . '/includes/header.php';
     </div>
 </div>
 
-<!-- Assign Residence Modal (for a tenant who currently has none) -->
-<div class="modal-overlay" id="assignResidenceModal">
+<!-- Assign Apartment Modal (for a tenant who currently has none) -->
+<div class="modal-overlay" id="assignApartmentModal">
     <div class="modal">
         <div class="modal-header">
-            <h3>Assign Residence - <span id="assignResidenceTenantName"></span></h3>
-            <button class="modal-close" onclick="closeModal('assignResidenceModal')">&times;</button>
+            <h3>Assign Apartment - <span id="assignApartmentTenantName"></span></h3>
+            <button class="modal-close" onclick="closeModal('assignApartmentModal')">&times;</button>
         </div>
         <div class="modal-body">
-            <form id="assignResidenceForm" onsubmit="submitAssignResidence(event)">
-                <input type="hidden" name="tenant_id" id="assignResidenceTenantId">
+            <form id="assignApartmentForm" onsubmit="submitAssignApartment(event)">
+                <input type="hidden" name="tenant_id" id="assignApartmentTenantId">
                 <div class="form-row">
                     <div class="form-group">
-                        <label>Room *</label>
-                        <select name="room_id" class="form-control" id="assignResidenceRoom" required onchange="document.getElementById('assignResidenceRent').value=this.options[this.selectedIndex].dataset.price||''">
-                            <option value="" disabled selected>Select a room</option>
-                            <?php foreach ($rooms as $r): ?>
-                            <option value="<?= $r['id'] ?>" data-price="<?= $r['rental_price'] ?>"><?= sanitize($r['room_number']) ?> &bull; <?= formatCurrency($r['rental_price']) ?>/<?= ($r['charge_period'] ?? 'monthly') === 'daily' ? 'day' : 'mo' ?></option>
+                        <label>Apartment *</label>
+                        <select name="apartment_id" class="form-control" id="assignApartmentSelect" required onchange="document.getElementById('assignApartmentRent').value=this.options[this.selectedIndex].dataset.price||''">
+                            <option value="" disabled selected>Select an apartment</option>
+                            <?php foreach ($apartments as $r): ?>
+                            <option value="<?= $r['id'] ?>" data-price="<?= $r['rental_price'] ?>"><?= sanitize($r['apartment_number']) ?> &bull; <?= formatCurrency($r['rental_price']) ?>/<?= ($r['charge_period'] ?? 'monthly') === 'daily' ? 'day' : 'mo' ?></option>
                             <?php endforeach; ?>
                         </select>
                     </div>
                     <div class="form-group">
                         <label>Monthly Rent (GH&#8373;) *</label>
-                        <input type="number" name="monthly_rent" id="assignResidenceRent" class="form-control" step="0.01" required>
+                        <input type="number" name="monthly_rent" id="assignApartmentRent" class="form-control" step="0.01" required>
                     </div>
                 </div>
                 <div class="form-group">
@@ -167,8 +167,8 @@ include __DIR__ . '/includes/header.php';
                     <input type="date" name="start_date" class="form-control" value="<?= date('Y-m-d') ?>" min="<?= date('Y-m-d', strtotime('-1 month')) ?>">
                 </div>
                 <div class="modal-footer" style="padding:0;border:none;margin-top:16px;">
-                    <button type="button" class="btn btn-secondary" onclick="closeModal('assignResidenceModal')">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Assign Residence</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('assignApartmentModal')">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Assign Apartment</button>
                 </div>
             </form>
         </div>
@@ -235,8 +235,8 @@ function renderTenants(tenants) {
             <td>${esc(t.username)}</td>
             <td>${esc(t.phone || '-')}</td>
             <td>${esc(t.email || '-')}</td>
-            <td>${t.room_number
-                ? esc(t.room_number)
+            <td>${t.apartment_number
+                ? esc(t.apartment_number)
                 : '<span style="color:var(--warning);font-weight:600;">Unassigned</span>'}</td>
             <td>${t.owing > 0
                 ? '<span style="color:var(--danger);font-weight:700;">GH\u20B5 ' + Number(t.owing).toFixed(2) + '</span>'
@@ -250,8 +250,8 @@ function renderTenants(tenants) {
                     ${t.is_active
                         ? `<button class="btn btn-sm btn-danger" onclick="deactivateTenant(${t.id})">Deactivate</button>`
                         : `<button class="btn btn-sm btn-success" onclick="activateTenant(${t.id})">Activate</button>`}
-                    ${t.is_active && !t.room_number
-                        ? `<button class="btn btn-sm btn-primary" onclick="openAssignResidence(${t.id})"><i class='bx bx-home-alt'></i> Assign Residence</button>`
+                    ${t.is_active && !t.apartment_number
+                        ? `<button class="btn btn-sm btn-primary" onclick="openAssignApartment(${t.id})"><i class='bx bx-home-alt'></i> Assign Apartment</button>`
                         : ''}
                     <button class="btn btn-sm btn-outline" onclick="openAgreements(${t.id})"><i class="bx bx-file"></i> Agreement</button>
                 </div>
@@ -272,8 +272,8 @@ async function submitTenant(e) {
         showToast('Tenant must be at least 18 years old to register.', 'error');
         return;
     }
-    if (!form.get('room_id')) {
-        showToast('Please select a room for the tenant.', 'error');
+    if (!form.get('apartment_id')) {
+        showToast('Please select an apartment for the tenant.', 'error');
         return;
     }
     const phone = form.get('phone') || '';
@@ -393,31 +393,31 @@ async function deleteAgreement(id, tenantId) {
     }
 }
 
-function openAssignResidence(id) {
+function openAssignApartment(id) {
     const t = allTenants.find(x => x.id === id);
-    document.getElementById('assignResidenceTenantId').value = id;
-    document.getElementById('assignResidenceTenantName').textContent = t ? t.full_name : 'Tenant #' + id;
-    document.getElementById('assignResidenceForm').reset();
-    openModal('assignResidenceModal');
+    document.getElementById('assignApartmentTenantId').value = id;
+    document.getElementById('assignApartmentTenantName').textContent = t ? t.full_name : 'Tenant #' + id;
+    document.getElementById('assignApartmentForm').reset();
+    openModal('assignApartmentModal');
 }
 
-async function submitAssignResidence(e) {
+async function submitAssignApartment(e) {
     e.preventDefault();
     const form = new FormData(e.target);
-    if (!form.get('room_id')) {
-        showToast('Please select a room.', 'error');
+    if (!form.get('apartment_id')) {
+        showToast('Please select an apartment.', 'error');
         return;
     }
-    form.append('action', 'assign_room');
+    form.append('action', 'assign_apartment');
     form.append('csrf_token', getCsrfToken());
     const res = await fetch('api/users.php', { method: 'POST', body: form });
     const data = await res.json();
     if (data.success) {
-        showToast('Residence assigned successfully!', 'success');
-        closeModal('assignResidenceModal');
+        showToast('Apartment assigned successfully!', 'success');
+        closeModal('assignApartmentModal');
         loadTenants();
     } else {
-        showToast(data.error || 'Error assigning residence', 'error');
+        showToast(data.error || 'Error assigning apartment', 'error');
     }
 }
 

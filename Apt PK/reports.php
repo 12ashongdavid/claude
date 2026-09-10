@@ -11,9 +11,9 @@ $totalRevenue = $db->query("SELECT COALESCE(SUM(amount),0) FROM rent_payments")-
 $thisMonthRevenue = $db->query("SELECT COALESCE(SUM(amount),0) FROM rent_payments WHERE MONTH(payment_date)=MONTH(CURRENT_DATE()) AND YEAR(payment_date)=YEAR(CURRENT_DATE())")->fetchColumn();
 $lastMonthRevenue = $db->query("SELECT COALESCE(SUM(amount),0) FROM rent_payments WHERE MONTH(payment_date)=MONTH(DATE_SUB(CURRENT_DATE(), INTERVAL 1 MONTH)) AND YEAR(payment_date)=YEAR(DATE_SUB(CURRENT_DATE(), INTERVAL 1 MONTH))")->fetchColumn();
 
-$totalRooms = $db->query("SELECT COUNT(*) FROM rooms")->fetchColumn();
-$occupiedRooms = $db->query("SELECT COUNT(*) FROM rooms WHERE status='occupied'")->fetchColumn();
-$occupancyRate = $totalRooms > 0 ? round($occupiedRooms / $totalRooms * 100) : 0;
+$totalApartments = $db->query("SELECT COUNT(*) FROM apartments")->fetchColumn();
+$occupiedApartments = $db->query("SELECT COUNT(*) FROM apartments WHERE status='occupied'")->fetchColumn();
+$occupancyRate = $totalApartments > 0 ? round($occupiedApartments / $totalApartments * 100) : 0;
 
 $totalTenants = $db->query("SELECT COUNT(*) FROM users WHERE role='tenant' AND is_active=1")->fetchColumn();
 $totalMaintenance = $db->query("SELECT COUNT(*) FROM maintenance_requests")->fetchColumn();
@@ -24,8 +24,8 @@ $unpaidBills = $db->query("SELECT COALESCE(SUM(amount),0) FROM utility_bills WHE
 $monthlyData = $db->query("SELECT DATE_FORMAT(payment_date, '%Y-%m') as month, SUM(amount) as total FROM rent_payments GROUP BY month ORDER BY month DESC LIMIT 6")->fetchAll();
 $monthlyData = array_reverse($monthlyData);
 
-// Room type breakdown
-$roomBreakdown = $db->query("SELECT room_type, COUNT(*) as count, SUM(CASE WHEN status='occupied' THEN 1 ELSE 0 END) as occupied FROM rooms GROUP BY room_type")->fetchAll();
+// Apartment type breakdown
+$apartmentBreakdown = $db->query("SELECT apartment_type, COUNT(*) as count, SUM(CASE WHEN status='occupied' THEN 1 ELSE 0 END) as occupied FROM apartments GROUP BY apartment_type")->fetchAll();
 
 // Maintenance breakdown
 $maintBreakdown = $db->query("SELECT category, COUNT(*) as count FROM maintenance_requests GROUP BY category ORDER BY count DESC")->fetchAll();
@@ -94,15 +94,15 @@ include __DIR__ . '/includes/header.php';
         </div>
     </div>
 
-    <!-- Room Type Breakdown -->
+    <!-- Apartment Type Breakdown -->
     <div class="card">
-        <div class="card-header"><h3>Room Occupancy by Type</h3></div>
-        <?php foreach ($roomBreakdown as $rb):
+        <div class="card-header"><h3>Apartment Occupancy by Type</h3></div>
+        <?php foreach ($apartmentBreakdown as $rb):
             $occRate = $rb['count'] > 0 ? round($rb['occupied'] / $rb['count'] * 100) : 0;
         ?>
         <div style="margin-bottom:16px;">
             <div style="display:flex;justify-content:space-between;margin-bottom:4px;font-size:0.88rem;">
-                <span style="text-transform:capitalize;font-weight:600;"><?= sanitize($rb['room_type']) ?></span>
+                <span style="text-transform:capitalize;font-weight:600;"><?= sanitize($rb['apartment_type']) ?></span>
                 <span class="text-muted"><?= $rb['occupied'] ?>/<?= $rb['count'] ?> occupied</span>
             </div>
             <div class="progress-bar">
@@ -175,7 +175,7 @@ include __DIR__ . '/includes/header.php';
                     <th>Date</th>
                     <th>Type</th>
                     <th>Tenant</th>
-                    <th>Residence</th>
+                    <th>Apartment</th>
                     <th>Reference</th>
                     <th>Method</th>
                     <th>Period</th>
@@ -228,7 +228,7 @@ function generateReport() {
                         '<td>' + esc(row.d) + '</td>' +
                         '<td><span class="badge" style="background:' + (row.kind === 'rent' ? 'var(--success)' : 'var(--accent)') + ';">' + row.kind + '</span></td>' +
                         '<td>' + esc(row.tenant) + '</td>' +
-                        '<td>' + esc(row.room) + '</td>' +
+                        '<td>' + esc(row.apartment) + '</td>' +
                         '<td>' + esc(row.ref) + '</td>' +
                         '<td style="text-transform:capitalize;">' + esc(methodLabel) + '</td>' +
                         '<td>' + esc(row.note) + '</td>' +

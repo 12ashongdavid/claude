@@ -1,15 +1,15 @@
 <?php
-// Home screen summary for a tenant: their residence, rent status, and
+// Home screen summary for a tenant: their apartment, rent status, and
 // recent activity.
 require_once __DIR__ . '/_bootstrap.php';
 $user = requireMobileAuth();
 $db = getDB();
 
 $stmt = $db->prepare("SELECT r.*, t.id as tenancy_id, t.monthly_rent, t.start_date, t.end_date, rt.charge_period
-    FROM tenancies t JOIN rooms r ON t.room_id = r.id LEFT JOIN room_types rt ON rt.name = r.room_type
+    FROM tenancies t JOIN apartments r ON t.apartment_id = r.id LEFT JOIN apartment_types rt ON rt.name = r.apartment_type
     WHERE t.tenant_id = ? AND t.status = 'active'");
 $stmt->execute([$user['id']]);
-$room = $stmt->fetch();
+$apartment = $stmt->fetch();
 
 $arrears = computeTenantArrears($user['id']);
 $paidThrough = getTenantPaidThroughRange($user['id']);
@@ -41,7 +41,7 @@ $stmt->execute([$user['id'], $user['id']]);
 $recentPayments = $stmt->fetchAll();
 
 mobileJsonOut([
-    'room' => $room ?: null,
+    'apartment' => $apartment ?: null,
     'owing' => $arrears['owing'],
     'owingMonths' => $arrears['months'],
     'paidThrough' => $paidThrough,

@@ -24,10 +24,10 @@ $db = getDB();
 $today = date('Y-m-d');
 
 $tenancies = $db->query("
-    SELECT t.tenant_id, t.room_id, u.full_name, u.phone, r.room_number
+    SELECT t.tenant_id, t.apartment_id, u.full_name, u.phone, r.apartment_number
     FROM tenancies t
     JOIN users u ON u.id = t.tenant_id AND u.is_active = 1
-    JOIN rooms r ON r.id = t.room_id
+    JOIN apartments r ON r.id = t.apartment_id
     WHERE t.status = 'active'
 ")->fetchAll();
 
@@ -80,7 +80,7 @@ foreach ($tenancies as $t) {
     sendSMS($t['phone'], "Dear " . $t['full_name'] . ", this is a friendly reminder that your rent covering $monthLabel ends on $expiryLabel. Please pay before then to avoid interruption. - " . SITE_NAME);
 
     // Admins - in-app + SMS
-    $adminMsg = "Rent due reminder: " . $t['full_name'] . " (Room " . $t['room_number'] . ") - $monthLabel ends $expiryLabel. Weekly reminder $week/4.";
+    $adminMsg = "Rent due reminder: " . $t['full_name'] . " (Apartment " . $t['apartment_number'] . ") - $monthLabel ends $expiryLabel. Weekly reminder $week/4.";
     foreach ($admins as $admin) {
         $insNotifAdmin->execute([$admin['id'], $adminMsg]);
         sendSMS($admin['phone'], $adminMsg);
@@ -88,7 +88,7 @@ foreach ($tenancies as $t) {
 
     $insLog->execute([$t['tenant_id'], $covered, $week]);
     $sent++;
-    $due[] = $t['full_name'] . ' (' . $t['room_number'] . ')';
+    $due[] = $t['full_name'] . ' (' . $t['apartment_number'] . ')';
 }
 
 echo date('Y-m-d H:i:s') . " - rent reminders sent: $sent\n";

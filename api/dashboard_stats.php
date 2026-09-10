@@ -17,20 +17,20 @@ $pendingMaintenance = (int)$db->query("SELECT COUNT(*) FROM maintenance_requests
 $pendingBookings = (int)$db->query("SELECT COUNT(*) FROM booking_requests WHERE status='pending'")->fetchColumn();
 
 $recentPayments = $db->query("
-    SELECT payment_date, amount, payment_method, tenant_name, room_number, kind
+    SELECT payment_date, amount, payment_method, tenant_name, apartment_number, kind
     FROM (
         SELECT rp.payment_date AS payment_date, rp.amount AS amount, rp.payment_method AS payment_method,
-               u.full_name AS tenant_name, r.room_number AS room_number, 'Rent' AS kind, rp.created_at AS created_at
+               u.full_name AS tenant_name, r.apartment_number AS apartment_number, 'Rent' AS kind, rp.created_at AS created_at
         FROM rent_payments rp
         JOIN users u ON rp.tenant_id = u.id
-        JOIN rooms r ON rp.room_id = r.id
+        JOIN apartments r ON rp.apartment_id = r.id
         WHERE rp.status = 'completed'
         UNION ALL
         SELECT ub.payment_date, ub.amount, ub.payment_method,
-               u.full_name, r.room_number, CONCAT('Utility (', UCASE(ub.bill_type), ')'), ub.created_at
+               u.full_name, r.apartment_number, CONCAT('Utility (', UCASE(ub.bill_type), ')'), ub.created_at
         FROM utility_bills ub
         JOIN users u ON ub.tenant_id = u.id
-        JOIN rooms r ON ub.room_id = r.id
+        JOIN apartments r ON ub.apartment_id = r.id
         WHERE ub.status = 'paid' AND ub.payment_date IS NOT NULL
     ) t
     ORDER BY payment_date DESC, created_at DESC

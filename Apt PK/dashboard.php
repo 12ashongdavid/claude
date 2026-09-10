@@ -1,5 +1,5 @@
 <?php
-// Home dashboard - shows admin/staff the property overview, or a tenant their own room and payments.
+// Home dashboard - shows admin/staff the property overview, or a tenant their own apartment and payments.
 require_once __DIR__ . '/config/database.php';
 $pageTitle = 'Dashboard';
 requireRole(['admin', 'staff', 'tenant']);
@@ -10,10 +10,10 @@ $role = $user['role'];
 
 // Stats
 if ($role === 'admin' || $role === 'staff') {
-    $totalRooms = $db->query("SELECT COUNT(*) FROM rooms")->fetchColumn();
-    $occupiedRooms = $db->query("SELECT COUNT(*) FROM rooms WHERE status='occupied'")->fetchColumn();
-    $availableRooms = $db->query("SELECT COUNT(*) FROM rooms WHERE status='available'")->fetchColumn();
-    $maintenanceRooms = $db->query("SELECT COUNT(*) FROM rooms WHERE status='maintenance'")->fetchColumn();
+    $totalApartments = $db->query("SELECT COUNT(*) FROM apartments")->fetchColumn();
+    $occupiedApartments = $db->query("SELECT COUNT(*) FROM apartments WHERE status='occupied'")->fetchColumn();
+    $availableApartments = $db->query("SELECT COUNT(*) FROM apartments WHERE status='available'")->fetchColumn();
+    $maintenanceApartments = $db->query("SELECT COUNT(*) FROM apartments WHERE status='maintenance'")->fetchColumn();
     $totalTenants = $db->query("SELECT COUNT(*) FROM users WHERE role='tenant' AND is_active=1")->fetchColumn();
     $totalPayments = $db->query("SELECT
         (SELECT COALESCE(SUM(amount),0) FROM rent_payments WHERE MONTH(payment_date)=MONTH(CURRENT_DATE()) AND YEAR(payment_date)=YEAR(CURRENT_DATE()))
@@ -48,9 +48,9 @@ if ($role === 'admin' || $role === 'staff') {
     $revenueTotals = array_column($revenueMonths, 'total');
 } else {
     // Tenant stats
-    $myRoom = $db->prepare("SELECT r.*, t.id as tenancy_id, t.monthly_rent, t.start_date, t.end_date FROM tenancies t JOIN rooms r ON t.room_id = r.id WHERE t.tenant_id = ? AND t.status = 'active'");
-    $myRoom->execute([$user['id']]);
-    $myRoom = $myRoom->fetch();
+    $myApartment = $db->prepare("SELECT r.*, t.id as tenancy_id, t.monthly_rent, t.start_date, t.end_date FROM tenancies t JOIN apartments r ON t.apartment_id = r.id WHERE t.tenant_id = ? AND t.status = 'active'");
+    $myApartment->execute([$user['id']]);
+    $myApartment = $myApartment->fetch();
 
     $myPayments = $db->prepare("SELECT COUNT(*) FROM rent_payments WHERE tenant_id = ?");
     $myPayments->execute([$user['id']]);
@@ -71,19 +71,19 @@ if ($role === 'admin' || $role === 'staff') {
 
 // Recent payments (rent + paid utility bills)
 $recentPayments = $db->query("
-    SELECT payment_date, amount, payment_method, tenant_name, room_number, kind
+    SELECT payment_date, amount, payment_method, tenant_name, apartment_number, kind
     FROM (
         SELECT rp.payment_date AS payment_date, rp.amount AS amount, rp.payment_method AS payment_method,
-               u.full_name AS tenant_name, r.room_number AS room_number, 'Rent' AS kind, rp.created_at AS created_at
+               u.full_name AS tenant_name, r.apartment_number AS apartment_number, 'Rent' AS kind, rp.created_at AS created_at
         FROM rent_payments rp
         JOIN users u ON rp.tenant_id = u.id
-        JOIN rooms r ON rp.room_id = r.id
+        JOIN apartments r ON rp.apartment_id = r.id
         UNION ALL
         SELECT ub.payment_date, ub.amount, ub.payment_method,
-               u.full_name, r.room_number, CONCAT('Utility (', UCASE(ub.bill_type), ')'), ub.created_at
+               u.full_name, r.apartment_number, CONCAT('Utility (', UCASE(ub.bill_type), ')'), ub.created_at
         FROM utility_bills ub
         JOIN users u ON ub.tenant_id = u.id
-        JOIN rooms r ON ub.room_id = r.id
+        JOIN apartments r ON ub.apartment_id = r.id
         WHERE ub.status = 'paid' AND ub.payment_date IS NOT NULL
     ) t
     ORDER BY payment_date DESC, created_at DESC
@@ -91,7 +91,7 @@ $recentPayments = $db->query("
 ")->fetchAll();
 
 // Recent maintenance
-$recentMaintenance = $db->query("SELECT mr.*, u.full_name as tenant_name, r.room_number FROM maintenance_requests mr JOIN users u ON mr.tenant_id = u.id JOIN rooms r ON mr.room_id = r.id ORDER BY mr.created_at DESC LIMIT 5")->fetchAll();
+$recentMaintenance = $db->query("SELECT mr.*, u.full_name as tenant_name, r.apartment_number FROM maintenance_requests mr JOIN users u ON mr.tenant_id = u.id JOIN apartments r ON mr.apartment_id = r.id ORDER BY mr.created_at DESC LIMIT 5")->fetchAll();
 
 include __DIR__ . '/includes/header.php';
 ?>
@@ -102,21 +102,21 @@ include __DIR__ . '/includes/header.php';
     <div class="stat-card">
         <div class="stat-icon blue"><i class='bx bx-door-open'></i></div>
         <div class="stat-info">
-            <h4><?= $totalRooms ?></h4>
-            <p>Total Residences</p>
+            <h4><?= $totalApartments ?></h4>
+            <p>Total Apartments</p>
         </div>
     </div>
     <div class="stat-card">
         <div class="stat-icon available"><i class='bx bx-check-circle'></i></div>
         <div class="stat-info">
-            <h4><?= $availableRooms ?></h4>
-            <p>Residences Available</p>
+            <h4><?= $availableApartments ?></h4>
+            <p>Apartments Available</p>
         </div>
     </div>
     <div class="stat-card">
         <div class="stat-icon green"><i class='bx bx-home'></i></div>
         <div class="stat-info">
-            <h4><?= $occupiedRooms ?>/<?= $totalRooms ?></h4>
+            <h4><?= $occupiedApartments ?>/<?= $totalApartments ?></h4>
             <p>Occupied</p>
         </div>
     </div>
@@ -153,20 +153,20 @@ include __DIR__ . '/includes/header.php';
 <!-- Occupancy Progress -->
 <div class="card mb-3">
     <div class="card-header">
-        <h3>Residence Occupancy</h3>
-        <a href="rooms.php" class="btn btn-sm btn-outline">View All</a>
+        <h3>Apartment Occupancy</h3>
+        <a href="apartments.php" class="btn btn-sm btn-outline">View All</a>
     </div>
     <div style="display:flex;align-items:center;gap:16px;">
         <div class="progress-bar" style="flex:1;">
-            <div class="progress-bar-fill green" style="width:<?= $totalRooms > 0 ? round($occupiedRooms/$totalRooms*100) : 0 ?>%"></div>
+            <div class="progress-bar-fill green" style="width:<?= $totalApartments > 0 ? round($occupiedApartments/$totalApartments*100) : 0 ?>%"></div>
         </div>
-        <span style="font-weight:700;color:var(--text);"><?= $totalRooms > 0 ? round($occupiedRooms/$totalRooms*100) : 0 ?>%</span>
+        <span style="font-weight:700;color:var(--text);"><?= $totalApartments > 0 ? round($occupiedApartments/$totalApartments*100) : 0 ?>%</span>
     </div>
     <div style="display:flex;gap:20px;margin-top:12px;font-size:0.82rem;">
-        <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--success);margin-right:4px;"></span> Occupied (<?= $occupiedRooms ?>)</span>
-        <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--text-muted);margin-right:4px;"></span> Available (<?= $availableRooms ?>)</span>
-        <?php if ($maintenanceRooms > 0): ?>
-        <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--danger);margin-right:4px;"></span> Maintenance (<?= $maintenanceRooms ?>)</span>
+        <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--success);margin-right:4px;"></span> Occupied (<?= $occupiedApartments ?>)</span>
+        <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--text-muted);margin-right:4px;"></span> Available (<?= $availableApartments ?>)</span>
+        <?php if ($maintenanceApartments > 0): ?>
+        <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--danger);margin-right:4px;"></span> Maintenance (<?= $maintenanceApartments ?>)</span>
         <?php endif; ?>
     </div>
 </div>
@@ -183,7 +183,7 @@ include __DIR__ . '/includes/header.php';
     </div>
     <div class="card">
         <div class="card-header">
-            <h3>Residence Status Breakdown</h3>
+            <h3>Apartment Status Breakdown</h3>
         </div>
         <div style="position:relative;height:260px;">
             <canvas id="occupancyChart"></canvas>
@@ -201,14 +201,14 @@ include __DIR__ . '/includes/header.php';
         <div class="table-responsive">
             <table>
                 <thead>
-                    <tr><th>Type</th><th>Tenant</th><th>Residence</th><th>Amount</th><th>Date</th></tr>
+                    <tr><th>Type</th><th>Tenant</th><th>Apartment</th><th>Amount</th><th>Date</th></tr>
                 </thead>
                 <tbody id="recentPaymentsBody">
                     <?php if ($recentPayments): foreach ($recentPayments as $p): ?>
                     <tr>
                         <td><span class="badge badge-<?= $p['kind'] === 'Rent' ? 'success' : 'info' ?>"><?= sanitize($p['kind']) ?></span></td>
                         <td><?= sanitize($p['tenant_name']) ?></td>
-                        <td><?= sanitize($p['room_number']) ?></td>
+                        <td><?= sanitize($p['apartment_number']) ?></td>
                         <td style="font-weight:600;color:var(--success);"><?= formatCurrency($p['amount']) ?></td>
                         <td class="text-muted"><?= date('M j', strtotime($p['payment_date'])) ?></td>
                     </tr>
@@ -229,13 +229,13 @@ include __DIR__ . '/includes/header.php';
         <div class="table-responsive">
             <table>
                 <thead>
-                    <tr><th>Issue</th><th>Residence</th><th>Priority</th><th>Status</th></tr>
+                    <tr><th>Issue</th><th>Apartment</th><th>Priority</th><th>Status</th></tr>
                 </thead>
                 <tbody>
                     <?php if ($recentMaintenance): foreach ($recentMaintenance as $m): ?>
                     <tr>
                         <td><?= sanitize($m['subject']) ?></td>
-                        <td><?= sanitize($m['room_number']) ?></td>
+                        <td><?= sanitize($m['apartment_number']) ?></td>
                         <td>
                             <span class="badge badge-<?= $m['priority'] === 'urgent' ? 'danger' : ($m['priority'] === 'high' ? 'warning' : ($m['priority'] === 'medium' ? 'info' : 'secondary')) ?>">
                                 <?= ucfirst($m['priority']) ?>
@@ -304,8 +304,8 @@ include __DIR__ . '/includes/header.php';
     <div class="stat-card">
         <div class="stat-icon blue"><i class='bx bx-door-open'></i></div>
         <div class="stat-info">
-            <h4><?= $myRoom ? sanitize($myRoom['room_number']) : 'N/A' ?></h4>
-            <p>My Residence</p>
+            <h4><?= $myApartment ? sanitize($myApartment['apartment_number']) : 'N/A' ?></h4>
+            <p>My Apartment</p>
         </div>
     </div>
     <div class="stat-card">
@@ -331,23 +331,23 @@ include __DIR__ . '/includes/header.php';
     </div>
 </div>
 
-<?php if ($myRoom): ?>
-<!-- My Room Info -->
+<?php if ($myApartment): ?>
+<!-- My Apartment Info -->
 <div class="card mb-3">
     <div class="card-header">
-        <h3>My Residence - <?= sanitize($myRoom['room_number']) ?></h3>
+        <h3>My Apartment - <?= sanitize($myApartment['apartment_number']) ?></h3>
         <span class="badge badge-success">Active Tenancy</span>
     </div>
     <div class="grid-2">
         <div>
-            <p style="margin-bottom:6px;"><strong>Type:</strong> <?= ucfirst($myRoom['room_type']) ?></p>
-            <p style="margin-bottom:6px;"><strong>Floor:</strong> <?= $myRoom['floor'] ?></p>
-            <p><strong>Amenities:</strong> <?= sanitize($myRoom['amenities']) ?></p>
+            <p style="margin-bottom:6px;"><strong>Type:</strong> <?= ucfirst($myApartment['apartment_type']) ?></p>
+            <p style="margin-bottom:6px;"><strong>Floor:</strong> <?= $myApartment['floor'] ?></p>
+            <p><strong>Amenities:</strong> <?= sanitize($myApartment['amenities']) ?></p>
         </div>
         <div>
-            <p style="margin-bottom:6px;"><strong>Monthly Rent:</strong> <?= formatCurrency($myRoom['monthly_rent']) ?></p>
-            <p style="margin-bottom:6px;"><strong>Start Date:</strong> <?= date('M j, Y', strtotime($myRoom['start_date'])) ?></p>
-            <p><strong>End Date:</strong> <?= $myRoom['end_date'] ? date('M j, Y', strtotime($myRoom['end_date'])) : 'N/A' ?></p>
+            <p style="margin-bottom:6px;"><strong>Monthly Rent:</strong> <?= formatCurrency($myApartment['monthly_rent']) ?></p>
+            <p style="margin-bottom:6px;"><strong>Start Date:</strong> <?= date('M j, Y', strtotime($myApartment['start_date'])) ?></p>
+            <p><strong>End Date:</strong> <?= $myApartment['end_date'] ? date('M j, Y', strtotime($myApartment['end_date'])) : 'N/A' ?></p>
         </div>
     </div>
 </div>
@@ -408,17 +408,17 @@ include __DIR__ . '/includes/header.php';
     <div class="table-responsive">
         <table>
             <thead>
-                <tr><th>Residence</th><th>Amount</th><th>Date</th><th>Method</th><th>Reference</th><th>Receipt</th></tr>
+                <tr><th>Apartment</th><th>Amount</th><th>Date</th><th>Method</th><th>Reference</th><th>Receipt</th></tr>
             </thead>
             <tbody>
                 <?php
-                $stmt = $db->prepare("SELECT rp.*, r.room_number FROM rent_payments rp JOIN rooms r ON rp.room_id = r.id WHERE rp.tenant_id = ? ORDER BY rp.payment_date DESC LIMIT 5");
+                $stmt = $db->prepare("SELECT rp.*, r.apartment_number FROM rent_payments rp JOIN apartments r ON rp.apartment_id = r.id WHERE rp.tenant_id = ? ORDER BY rp.payment_date DESC LIMIT 5");
                 $stmt->execute([$user['id']]);
                 $myPays = $stmt->fetchAll();
                 if ($myPays):
                     foreach ($myPays as $p): ?>
                     <tr>
-                        <td><?= sanitize($p['room_number']) ?></td>
+                        <td><?= sanitize($p['apartment_number']) ?></td>
                         <td style="font-weight:600;"><?= formatCurrency($p['amount']) ?></td>
                         <td><?= date('M j, Y', strtotime($p['payment_date'])) ?></td>
                         <td><?= ucfirst(str_replace('_', ' ', $p['payment_method'])) ?></td>
@@ -487,7 +487,7 @@ function loadAgreements() {
                     <i class="bx bx-file" style="font-size:1.3rem;color:var(--primary);flex-shrink:0;"></i>
                     <div style="flex:1;min-width:0;">
                         <div style="font-weight:600;font-size:0.88rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(a.original_name)}</div>
-                        <div style="font-size:0.74rem;color:var(--text-muted);">${esc(a.tenant_name)}${a.room_number ? ' &bull; ' + esc(a.room_number) : ''} &bull; ${formatBytes(a.file_size)} &bull; ${new Date(a.created_at).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})}</div>
+                        <div style="font-size:0.74rem;color:var(--text-muted);">${esc(a.tenant_name)}${a.apartment_number ? ' &bull; ' + esc(a.apartment_number) : ''} &bull; ${formatBytes(a.file_size)} &bull; ${new Date(a.created_at).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})}</div>
                     </div>
                     <a class="btn btn-sm btn-outline" href="api/agreements.php?action=view&id=${a.id}" target="_blank">View</a>
                     <a class="btn btn-sm btn-outline" href="api/agreements.php?action=view&id=${a.id}&download=1">Download</a>
@@ -526,7 +526,7 @@ function renderRecentPayments(rows) {
         <tr>
             <td><span class="badge badge-${p.kind === 'Rent' ? 'success' : 'info'}">${esc(p.kind)}</span></td>
             <td>${esc(p.tenant_name)}</td>
-            <td>${esc(p.room_number)}</td>
+            <td>${esc(p.apartment_number)}</td>
             <td style="font-weight:600;color:var(--success);">${fmtCcy(p.amount)}</td>
             <td class="text-muted">${new Date(p.payment_date).toLocaleDateString('en-GB', { month: 'short', day: 'numeric' })}</td>
         </tr>`).join('');
@@ -588,7 +588,7 @@ if (typeof Chart !== 'undefined') {
             data: {
                 labels: ['Occupied', 'Available', 'Maintenance'],
                 datasets: [{
-                    data: [<?= (int) $occupiedRooms ?>, <?= (int) $availableRooms ?>, <?= (int) $maintenanceRooms ?>],
+                    data: [<?= (int) $occupiedApartments ?>, <?= (int) $availableApartments ?>, <?= (int) $maintenanceApartments ?>],
                     backgroundColor: [cssVar('--success') || '#4CAF50', cssVar('--text-muted') || '#9AA1AE', cssVar('--danger') || '#DE4444'],
                 }],
             },

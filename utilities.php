@@ -19,12 +19,12 @@ if (isset($_GET['paid'])) {
 
 if ($isAdmin) {
     $tenants = $db->query("SELECT id, full_name FROM users WHERE role='tenant' AND is_active=1 ORDER BY full_name")->fetchAll();
-    $occupiedRooms = $db->query("SELECT id, room_number FROM rooms WHERE status='occupied' ORDER BY room_number")->fetchAll();
-    // Map each tenant to the residence in their active tenancy (one account = one residence)
-    $tenantRooms = [];
-    $rows = $db->query("SELECT t.tenant_id, r.id AS room_id, r.room_number FROM tenancies t JOIN rooms r ON t.room_id = r.id WHERE t.status = 'active'")->fetchAll();
+    $occupiedApartments = $db->query("SELECT id, apartment_number FROM apartments WHERE status='occupied' ORDER BY apartment_number")->fetchAll();
+    // Map each tenant to the apartment in their active tenancy (one account = one apartment)
+    $tenantApartments = [];
+    $rows = $db->query("SELECT t.tenant_id, r.id AS apartment_id, r.apartment_number FROM tenancies t JOIN apartments r ON t.apartment_id = r.id WHERE t.status = 'active'")->fetchAll();
     foreach ($rows as $row) {
-        $tenantRooms[$row['tenant_id']] = ['room_id' => intval($row['room_id']), 'room_number' => $row['room_number']];
+        $tenantApartments[$row['tenant_id']] = ['apartment_id' => intval($row['apartment_id']), 'apartment_number' => $row['apartment_number']];
     }
 }
 
@@ -60,7 +60,7 @@ include __DIR__ . '/includes/header.php';
             <thead>
                 <tr>
                     <?php if ($isAdmin): ?><th>Tenant</th><?php endif; ?>
-                    <th>Residence</th>
+                    <th>Apartment</th>
                     <th>Bill Type</th>
                     <th>Amount</th>
                     <th>Billing Month</th>
@@ -87,7 +87,7 @@ include __DIR__ . '/includes/header.php';
                 <div class="form-row">
                     <div class="form-group">
                         <label>Tenant *</label>
-                        <select name="tenant_id" class="form-control" required onchange="autofillRoom(this)">
+                        <select name="tenant_id" class="form-control" required onchange="autofillApartment(this)">
                             <option value="">Select tenant...</option>
                             <?php foreach ($tenants as $t): ?>
                             <option value="<?= $t['id'] ?>"><?= sanitize($t['full_name']) ?></option>
@@ -95,14 +95,14 @@ include __DIR__ . '/includes/header.php';
                         </select>
                     </div>
                     <div class="form-group">
-                        <label>Residence *</label>
-                        <select name="room_id" id="billRoomSelect" class="form-control" required>
-                            <option value="">Select residence...</option>
-                            <?php foreach ($occupiedRooms as $r): ?>
-                            <option value="<?= $r['id'] ?>"><?= sanitize($r['room_number']) ?></option>
+                        <label>Apartment *</label>
+                        <select name="apartment_id" id="billApartmentSelect" class="form-control" required>
+                            <option value="">Select apartment...</option>
+                            <?php foreach ($occupiedApartments as $r): ?>
+                            <option value="<?= $r['id'] ?>"><?= sanitize($r['apartment_number']) ?></option>
                             <?php endforeach; ?>
                         </select>
-                        <small id="billRoomHint" style="color:var(--text-muted);font-size:0.72rem;"></small>
+                        <small id="billApartmentHint" style="color:var(--text-muted);font-size:0.72rem;"></small>
                     </div>
                 </div>
                 <div class="form-row">
@@ -168,19 +168,19 @@ include __DIR__ . '/includes/header.php';
 let allBills = [];
 const isAdmin = <?= json_encode($isAdmin) ?>;
 const myId = <?= json_encode($user['id']) ?>;
-const tenantRooms = <?= $isAdmin ? json_encode($tenantRooms) : '{}' ?>;
+const tenantApartments = <?= $isAdmin ? json_encode($tenantApartments) : '{}' ?>;
 
-function autofillRoom(sel) {
-    const roomSel = document.getElementById('billRoomSelect');
-    const hint = document.getElementById('billRoomHint');
-    const info = tenantRooms[sel.value];
+function autofillApartment(sel) {
+    const apartmentSel = document.getElementById('billApartmentSelect');
+    const hint = document.getElementById('billApartmentHint');
+    const info = tenantApartments[sel.value];
     if (info) {
-        roomSel.value = info.room_id;
-        roomSel.disabled = true;
-        if (hint) hint.textContent = 'Residence ' + info.room_number + ' auto-selected from this tenant\'s active tenancy.';
+        apartmentSel.value = info.apartment_id;
+        apartmentSel.disabled = true;
+        if (hint) hint.textContent = 'Apartment ' + info.apartment_number + ' auto-selected from this tenant\'s active tenancy.';
     } else {
-        roomSel.value = '';
-        roomSel.disabled = false;
+        apartmentSel.value = '';
+        apartmentSel.disabled = false;
         if (hint) hint.textContent = '';
     }
 }
@@ -214,7 +214,7 @@ function renderBills(bills) {
     tbody.innerHTML = bills.map(b => `
         <tr>
             ${isAdmin ? `<td>${esc(b.tenant_name)}</td>` : ''}
-            <td>${esc(b.room_number)}</td>
+            <td>${esc(b.apartment_number)}</td>
             <td>${esc(b.bill_type.charAt(0).toUpperCase() + b.bill_type.slice(1))}</td>
             <td style="font-weight:600;">GH&#8373; ${parseFloat(b.amount).toFixed(2)}</td>
             <td>${new Date(b.billing_month + '-01').toLocaleDateString('en-GB',{month:'long',year:'numeric'})}</td>
@@ -231,8 +231,8 @@ function renderBills(bills) {
 async function submitBill(e) {
     e.preventDefault();
     const form = new FormData(e.target);
-    const roomSel = document.getElementById('billRoomSelect');
-    if (roomSel.disabled && roomSel.value) form.append('room_id', roomSel.value);
+    const apartmentSel = document.getElementById('billApartmentSelect');
+    if (apartmentSel.disabled && apartmentSel.value) form.append('apartment_id', apartmentSel.value);
     form.append('action', 'add');
     form.append('csrf_token', getCsrfToken());
     const res = await fetch('api/utilities.php', { method: 'POST', body: form });
@@ -241,8 +241,8 @@ async function submitBill(e) {
         showToast('Utility bill added!', 'success');
         closeModal('addBillModal');
         e.target.reset();
-        roomSel.disabled = false;
-        const hint = document.getElementById('billRoomHint');
+        apartmentSel.disabled = false;
+        const hint = document.getElementById('billApartmentHint');
         if (hint) hint.textContent = '';
         loadBills();
     } else {

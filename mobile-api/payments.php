@@ -42,7 +42,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         mobileJsonOut(['error' => 'You have already paid rent for ' . implode(', ', $overlap) . '.'], 400);
     }
 
-    $stmt = $db->prepare("SELECT room_id, monthly_rent FROM tenancies WHERE tenant_id = ? AND status = 'active' ORDER BY id DESC LIMIT 1");
+    $stmt = $db->prepare("SELECT apartment_id, monthly_rent FROM tenancies WHERE tenant_id = ? AND status = 'active' ORDER BY id DESC LIMIT 1");
     $stmt->execute([$user['id']]);
     $ten = $stmt->fetch();
     if (!$ten) {
@@ -78,6 +78,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // GET: payment history (own record only)
-$stmt = $db->prepare("SELECT rp.*, r.room_number FROM rent_payments rp JOIN rooms r ON rp.room_id = r.id WHERE rp.tenant_id = ? ORDER BY rp.payment_date DESC, rp.id DESC LIMIT 100");
+$stmt = $db->prepare("SELECT rp.*, r.apartment_number FROM rent_payments rp JOIN apartments r ON rp.apartment_id = r.id WHERE rp.tenant_id = ? ORDER BY rp.payment_date DESC, rp.id DESC LIMIT 100");
 $stmt->execute([$user['id']]);
 mobileJsonOut(['payments' => $stmt->fetchAll()]);

@@ -159,7 +159,7 @@ async function renderHome() {
     try {
         const d = await Api.get('dashboard.php');
         cache.home = d;
-        const room = d.room;
+        const apartment = d.apartment;
         body.innerHTML = `
         <div class="stat-grid">
             <div class="stat-card ${d.owing > 0 ? 'owing' : 'ok'}">
@@ -179,17 +179,17 @@ async function renderHome() {
                 <div class="label">Unread Alerts</div>
             </div>
         </div>
-        ${room ? `
+        ${apartment ? `
         <div class="card">
-            <h3>Your Residence</h3>
+            <h3>Your Apartment</h3>
             <div class="list-item">
                 <div class="main">
-                    <div class="title">${esc(room.room_number)} · ${esc((room.room_type || '').replace(/^./, c => c.toUpperCase()))}</div>
+                    <div class="title">${esc(apartment.apartment_number)} · ${esc((apartment.apartment_type || '').replace(/^./, c => c.toUpperCase()))}</div>
                     <div class="meta">Paid through: ${d.paidThrough ? esc(d.paidThrough) : 'No payments yet'}</div>
                 </div>
-                <div class="amount">${money(room.monthly_rent)}/mo</div>
+                <div class="amount">${money(apartment.monthly_rent)}/mo</div>
             </div>
-        </div>` : `<div class="card">${emptyState('bx-home-smile', "You don't have an active residence on file yet. Contact management if this looks wrong.")}</div>`}
+        </div>` : `<div class="card">${emptyState('bx-home-smile', "You don't have an active apartment on file yet. Contact management if this looks wrong.")}</div>`}
         <div class="card">
             <h3>Recent Activity</h3>
             ${(d.recentPayments && d.recentPayments.length) ? d.recentPayments.map((p) => `
@@ -335,21 +335,21 @@ async function renderMaintenance() {
                     <span class="badge badge-${statusBadge[r.status] || 'muted'}">${esc((r.status || '').replace('_', ' '))}</span>
                 </div>`).join('') : emptyState('bx-wrench', "You haven't submitted any repair requests.")}
         </div>`;
-        document.getElementById('newRequestBtn').addEventListener('click', () => openNewMaintenanceModal(d.rooms || []));
+        document.getElementById('newRequestBtn').addEventListener('click', () => openNewMaintenanceModal(d.apartments || []));
     } catch (err) {
         body.innerHTML = alertBox('error', err.message);
     }
 }
 
-function openNewMaintenanceModal(rooms) {
-    const roomOptions = rooms.map((r) => `<option value="${r.id}">${esc(r.room_number)}</option>`).join('');
+function openNewMaintenanceModal(apartments) {
+    const apartmentOptions = apartments.map((r) => `<option value="${r.id}">${esc(r.apartment_number)}</option>`).join('');
     openModal(`
         <h3 style="margin-bottom:14px;">New Repair Request</h3>
         <div id="maintError"></div>
         <form id="maintForm">
             <div class="form-group">
-                <label>Room</label>
-                <select name="room_id" class="form-control" required>${roomOptions}</select>
+                <label>Apartment</label>
+                <select name="apartment_id" class="form-control" required>${apartmentOptions}</select>
             </div>
             <div class="form-group">
                 <label>Category</label>
