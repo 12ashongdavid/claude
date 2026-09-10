@@ -1,7 +1,5 @@
 <?php
-// =====================================================
-// API: Payments CRUD
-// =====================================================
+// Records rent payments taken in person and lists payment history.
 require_once __DIR__ . '/../config/database.php';
 requireLogin();
 
@@ -26,14 +24,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if ($action === 'record') {
         $tenant_id = intval($_POST['tenant_id'] ?? 0);
-        $room_id = intval($_POST['room_id'] ?? 0);
+        $apartment_id = intval($_POST['apartment_id'] ?? 0);
         $amount = floatval($_POST['amount'] ?? 0);
         $payment_date = $_POST['payment_date'] ?? date('Y-m-d');
         $payment_method = $_POST['payment_method'] ?? 'cash';
         $month_covered = $_POST['month_covered'] ?? date('Y-m');
         $notes = trim($_POST['notes'] ?? '');
 
-        if ($tenant_id <= 0 || $room_id <= 0 || $amount <= 0) {
+        if ($tenant_id <= 0 || $apartment_id <= 0 || $amount <= 0) {
             echo json_encode(['error' => 'Please fill in all required fields.']);
             exit;
         }
@@ -52,21 +50,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         $ref = generateRef('RNT');
-        $stmt = $db->prepare("INSERT INTO rent_payments (tenant_id, room_id, amount, payment_date, payment_method, reference_number, month_covered, status, received_by, notes) VALUES (?, ?, ?, ?, ?, ?, ?, 'completed', ?, ?)");
-        $stmt->execute([$tenant_id, $room_id, $amount, $payment_date, $payment_method, $ref, $month_covered, $user['id'], $notes]);
+        $stmt = $db->prepare("INSERT INTO rent_payments (tenant_id, apartment_id, amount, payment_date, payment_method, reference_number, month_covered, status, received_by, notes) VALUES (?, ?, ?, ?, ?, ?, ?, 'completed', ?, ?)");
+        $stmt->execute([$tenant_id, $apartment_id, $amount, $payment_date, $payment_method, $ref, $month_covered, $user['id'], $notes]);
 
         $payment_id = $db->lastInsertId();
+        $monthLabel = date('F Y', strtotime($month_covered . '-01'));
 
         // Create notification for tenant
         $stmt = $db->prepare("INSERT INTO notifications (user_id, title, message, type) VALUES (?, 'Payment Received', ?, 'payment')");
-        $stmt->execute([$tenant_id, "Your rent payment of " . formatCurrency($amount) . " for $month_covered has been recorded. Ref: $ref"]);
+        $stmt->execute([$tenant_id, "Your rent payment of " . formatCurrency($amount) . " for $monthLabel has been recorded. Ref: $ref"]);
 
         // Send SMS confirmation to tenant
         $stmt = $db->prepare("SELECT full_name, phone FROM users WHERE id = ?");
         $stmt->execute([$tenant_id]);
         $tenant = $stmt->fetch();
         if ($tenant) {
-            sendSMS($tenant['phone'], "Dear " . $tenant['full_name'] . ", your rent payment of GH₵ " . number_format($amount, 2) . " for $month_covered has been received. Ref: $ref. Thank you!");
+            sendSMS($tenant['phone'], "Dear " . $tenant['full_name'] . ", your rent payment of GH₵ " . number_format($amount, 2) . " for $monthLabel has been received. Ref: $ref. Thank you!");
         }
 
         echo json_encode(['success' => true, 'id' => $payment_id, 'reference' => $ref]);
@@ -75,12 +74,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // GET: List payments
-$tenant_filter = $_GET['tenant_id'] ?? '';
+if (!in_array($user['role'], ['admin', 'staff'])) {
+    $tenant_filter = $user['id'];
+} else {
+    $tenant_filter = $_GET['tenant_id'] ?? '';
+}
 $date_from = $_GET['date_from'] ?? '';
 $date_to = $_GET['date_to'] ?? '';
 $search = $_GET['search'] ?? '';
 
-$sql = "SELECT rp.*, u.full_name as tenant_name, r.room_number FROM rent_payments rp JOIN users u ON rp.tenant_id = u.id JOIN rooms r ON rp.room_id = r.id WHERE 1=1";
+$sql = "SELECT rp.*, u.full_name as tenant_name, r.apartment_number FROM rent_payments rp JOIN users u ON rp.tenant_id = u.id JOIN apartments r ON rp.apartment_id = r.id WHERE 1=1";
 $params = [];
 
 if ($tenant_filter) {
@@ -96,7 +99,7 @@ if ($date_to) {
     $params[] = $date_to;
 }
 if ($search) {
-    $sql .= " AND (u.full_name LIKE ? OR rp.reference_number LIKE ? OR r.room_number LIKE ?)";
+    $sql .= " AND (u.full_name LIKE ? OR rp.reference_number LIKE ? OR r.apartment_number LIKE ?)";
     $params[] = "%$search%";
     $params[] = "%$search%";
     $params[] = "%$search%";

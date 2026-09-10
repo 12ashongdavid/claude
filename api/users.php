@@ -1,7 +1,5 @@
 <?php
-// =====================================================
-// API: Users (Tenants list, Profile update)
-// =====================================================
+// Handles user accounts - profile updates, plus admin/staff management of tenants and staff.
 require_once __DIR__ . '/../config/database.php';
 requireLogin();
 
@@ -27,12 +25,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             echo json_encode(['error' => 'Name and phone are required.']);
             exit;
         }
+        if (!validateName($full_name)) {
+            echo json_encode(['error' => 'Name must contain letters only (no numbers).']);
+            exit;
+        }
         if (!validatePhone($phone)) {
             echo json_encode(['error' => 'Phone number must contain exactly 10 digits (numbers only).']);
             exit;
         }
-        if (!empty($email) && !validateEmail($email)) {
-            echo json_encode(['error' => 'Please enter a valid email address.']);
+        if (empty($email)) {
+            echo json_encode(['error' => 'Email address is required.']);
+            exit;
+        }
+        $emailCheck = validateEmailDetailed($email);
+        if (!$emailCheck['valid']) {
+            echo json_encode(['error' => $emailCheck['message']]);
             exit;
         }
         if (!empty($date_of_birth) && !validateAge($date_of_birth)) {
@@ -78,7 +85,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 echo json_encode(['error' => $uploadError]);
                 exit;
             }
-            $ext = pathinfo($_FILES['profile_picture']['name'], PATHINFO_EXTENSION);
+            $finfo = new finfo(FILEINFO_MIME_TYPE);
+            $ext = safeUploadExtension($finfo->file($_FILES['profile_picture']['tmp_name']));
             $filename = 'user_' . $user['id'] . '_' . time() . '.' . $ext;
             $dest = UPLOAD_PATH . 'profiles/' . $filename;
             if (move_uploaded_file($_FILES['profile_picture']['tmp_name'], $dest)) {
@@ -107,21 +115,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $username = trim($_POST['username'] ?? '');
         $email = trim($_POST['email'] ?? '');
         $phone = trim($_POST['phone'] ?? '');
-        $room_id = intval($_POST['room_id'] ?? 0);
+        $apartment_id = intval($_POST['apartment_id'] ?? 0);
         $start_date = $_POST['start_date'] ?? date('Y-m-d');
         $monthly_rent = floatval($_POST['monthly_rent'] ?? 0);
         $date_of_birth = $_POST['date_of_birth'] ?? null;
 
-        if (empty($full_name) || empty($username) || empty($phone)) {
-            echo json_encode(['error' => 'Name, username, and phone are required.']);
+        if (empty($full_name) || empty($username) || empty($phone) || empty($email)) {
+            echo json_encode(['error' => 'Name, username, phone, and email are required.']);
+            exit;
+        }
+        if (!validateName($full_name)) {
+            echo json_encode(['error' => 'Name must contain letters only (no numbers).']);
             exit;
         }
         if (!validatePhone($phone)) {
             echo json_encode(['error' => 'Phone number must contain exactly 10 digits (numbers only).']);
             exit;
         }
-        if (!empty($email) && !validateEmail($email)) {
-            echo json_encode(['error' => 'Please enter a valid email address.']);
+        $emailCheck = validateEmailDetailed($email);
+        if (!$emailCheck['valid']) {
+            echo json_encode(['error' => $emailCheck['message']]);
             exit;
         }
         if (!validateStartDate($start_date)) {
@@ -129,7 +142,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             exit;
         }
         if (empty($date_of_birth)) {
-            echo json_encode(['error' => 'Date of birth is required — the tenant must be at least 18 years old.']);
+            echo json_encode(['error' => 'Date of birth is required - the tenant must be at least 18 years old.']);
             exit;
         }
         if (!validateAge($date_of_birth)) {
@@ -137,20 +150,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             exit;
         }
 
-        // A room is always required so the tenant can be billed and housed
-        if ($room_id <= 0) {
-            echo json_encode(['error' => 'Please select a room for the tenant.']);
+        // An apartment is always required so the tenant can be billed and housed
+        if ($apartment_id <= 0) {
+            echo json_encode(['error' => 'Please select an apartment for the tenant.']);
             exit;
         }
-        $stmt = $db->prepare("SELECT status FROM rooms WHERE id = ?");
-        $stmt->execute([$room_id]);
-        $roomStatus = $stmt->fetchColumn();
-        if ($roomStatus === false) {
-            echo json_encode(['error' => 'Selected room does not exist.']);
+        $stmt = $db->prepare("SELECT status FROM apartments WHERE id = ?");
+        $stmt->execute([$apartment_id]);
+        $apartmentStatus = $stmt->fetchColumn();
+        if ($apartmentStatus === false) {
+            echo json_encode(['error' => 'Selected apartment does not exist.']);
             exit;
         }
-        if ($roomStatus !== 'available') {
-            echo json_encode(['error' => 'Selected room is not available.']);
+        if ($apartmentStatus !== 'available') {
+            echo json_encode(['error' => 'Selected apartment is not available.']);
             exit;
         }
 
@@ -168,18 +181,84 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt->execute([$username, $hashed, $full_name, $email, $phone, $date_of_birth ?: null]);
         $tenant_id = $db->lastInsertId();
 
-        // Create the tenancy and mark the room occupied
+        // Create the tenancy and mark the apartment occupied
         $end_date = date('Y-m-d', strtotime($start_date . '+1 year'));
-        $stmt = $db->prepare("INSERT INTO tenancies (tenant_id, room_id, start_date, end_date, monthly_rent, status) VALUES (?, ?, ?, ?, ?, 'active')");
-        $stmt->execute([$tenant_id, $room_id, $start_date, $end_date, $monthly_rent]);
+        $stmt = $db->prepare("INSERT INTO tenancies (tenant_id, apartment_id, start_date, end_date, monthly_rent, status) VALUES (?, ?, ?, ?, ?, 'active')");
+        $stmt->execute([$tenant_id, $apartment_id, $start_date, $end_date, $monthly_rent]);
 
-        $stmt = $db->prepare("UPDATE rooms SET status = 'occupied' WHERE id = ?");
-        $stmt->execute([$room_id]);
+        $stmt = $db->prepare("UPDATE apartments SET status = 'occupied' WHERE id = ?");
+        $stmt->execute([$apartment_id]);
 
         // Send welcome SMS with temporary credentials
         sendSMS($phone, "Dear $full_name, your PK's Luxury Apartments tenant account has been created. Username: $username. Temporary password: $temp_password. Please log in and change your password.");
 
         echo json_encode(['success' => true, 'id' => $tenant_id]);
+        exit;
+    }
+
+    if ($action === 'assign_apartment') {
+        if (!in_array($user['role'], ['admin', 'staff'])) {
+            http_response_code(403);
+            echo json_encode(['error' => 'Forbidden']);
+            exit;
+        }
+
+        $tenant_id = intval($_POST['tenant_id'] ?? 0);
+        $apartment_id = intval($_POST['apartment_id'] ?? 0);
+        $start_date = $_POST['start_date'] ?? date('Y-m-d');
+        $monthly_rent = floatval($_POST['monthly_rent'] ?? 0);
+
+        $stmt = $db->prepare("SELECT id, is_active FROM users WHERE id = ? AND role = 'tenant'");
+        $stmt->execute([$tenant_id]);
+        $tenant = $stmt->fetch();
+        if (!$tenant) {
+            echo json_encode(['error' => 'Tenant not found.']);
+            exit;
+        }
+        if (!$tenant['is_active']) {
+            echo json_encode(['error' => 'Cannot assign an apartment to a deactivated tenant. Reactivate them first.']);
+            exit;
+        }
+
+        $stmt = $db->prepare("SELECT COUNT(*) FROM tenancies WHERE tenant_id = ? AND status = 'active'");
+        $stmt->execute([$tenant_id]);
+        if ($stmt->fetchColumn() > 0) {
+            echo json_encode(['error' => 'This tenant already has an active apartment.']);
+            exit;
+        }
+
+        if (!validateStartDate($start_date)) {
+            echo json_encode(['error' => 'Start date cannot be more than 1 month in the past.']);
+            exit;
+        }
+        if ($apartment_id <= 0) {
+            echo json_encode(['error' => 'Please select an apartment.']);
+            exit;
+        }
+        $stmt = $db->prepare("SELECT status FROM apartments WHERE id = ?");
+        $stmt->execute([$apartment_id]);
+        $apartmentStatus = $stmt->fetchColumn();
+        if ($apartmentStatus === false) {
+            echo json_encode(['error' => 'Selected apartment does not exist.']);
+            exit;
+        }
+        if ($apartmentStatus !== 'available') {
+            echo json_encode(['error' => 'Selected apartment is not available.']);
+            exit;
+        }
+        if ($monthly_rent <= 0) {
+            echo json_encode(['error' => 'Monthly rent must be greater than zero.']);
+            exit;
+        }
+
+        $end_date = date('Y-m-d', strtotime($start_date . '+1 year'));
+        $stmt = $db->prepare("INSERT INTO tenancies (tenant_id, apartment_id, start_date, end_date, monthly_rent, status) VALUES (?, ?, ?, ?, ?, 'active')");
+        $stmt->execute([$tenant_id, $apartment_id, $start_date, $end_date, $monthly_rent]);
+
+        $db->prepare("UPDATE apartments SET status = 'occupied' WHERE id = ?")->execute([$apartment_id]);
+        $db->prepare("INSERT INTO notifications (user_id, title, message, type) VALUES (?, 'Apartment Assigned', 'You have been assigned a new apartment. Check your dashboard for details.', 'success')")->execute([$tenant_id]);
+
+        echo json_encode(['success' => true]);
         exit;
     }
 
@@ -195,16 +274,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $email = trim($_POST['email'] ?? '');
         $phone = trim($_POST['phone'] ?? '');
 
-        if (empty($full_name) || empty($username) || empty($phone)) {
-            echo json_encode(['error' => 'Name, username, and phone are required.']);
+        if (empty($full_name) || empty($username) || empty($phone) || empty($email)) {
+            echo json_encode(['error' => 'Name, username, phone, and email are required.']);
+            exit;
+        }
+        if (!validateName($full_name)) {
+            echo json_encode(['error' => 'Name must contain letters only (no numbers).']);
             exit;
         }
         if (!validatePhone($phone)) {
             echo json_encode(['error' => 'Phone number must contain exactly 10 digits (numbers only).']);
             exit;
         }
-        if (!empty($email) && !validateEmail($email)) {
-            echo json_encode(['error' => 'Please enter a valid email address.']);
+        $emailCheck = validateEmailDetailed($email);
+        if (!$emailCheck['valid']) {
+            echo json_encode(['error' => $emailCheck['message']]);
             exit;
         }
 
@@ -281,16 +365,55 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         $stmt = $db->prepare("UPDATE users SET is_active = ? WHERE id = ?");
         $stmt->execute([$action === 'deactivate_user' ? 0 : 1, $id]);
+
+        if ($action === 'deactivate_user' && $targetRole === 'tenant') {
+            // End any active tenancy and free up their apartment
+            $apartmentIds = $db->prepare("SELECT apartment_id FROM tenancies WHERE tenant_id = ? AND status = 'active'");
+            $apartmentIds->execute([$id]);
+            $freedApartments = $apartmentIds->fetchAll(PDO::FETCH_COLUMN);
+
+            $db->prepare("UPDATE tenancies SET status = 'terminated', end_date = CURDATE() WHERE tenant_id = ? AND status = 'active'")->execute([$id]);
+
+            if ($freedApartments) {
+                $placeholders = implode(',', array_fill(0, count($freedApartments), '?'));
+                $db->prepare("UPDATE apartments SET status = 'available' WHERE id IN ($placeholders) AND status = 'occupied'")->execute($freedApartments);
+            }
+
+            $stmt = $db->prepare("SELECT full_name, phone FROM users WHERE id = ?");
+            $stmt->execute([$id]);
+            $target = $stmt->fetch();
+            if ($target) {
+                $db->prepare("INSERT INTO notifications (user_id, title, message, type) VALUES (?, 'Account Deactivated', 'Your account has been deactivated. Please contact management for details.', 'warning')")->execute([$id]);
+                sendSMS($target['phone'], "Dear " . $target['full_name'] . ", your PK's Luxury Apartments account has been deactivated. Please contact management for details.");
+            }
+        } elseif ($action === 'activate_user') {
+            $stmt = $db->prepare("SELECT full_name, phone FROM users WHERE id = ?");
+            $stmt->execute([$id]);
+            $target = $stmt->fetch();
+            if ($target) {
+                $db->prepare("INSERT INTO notifications (user_id, title, message, type) VALUES (?, 'Account Reactivated', 'Your account has been reactivated. You may now log in.', 'success')")->execute([$id]);
+                sendSMS($target['phone'], "Dear " . $target['full_name'] . ", your PK's Luxury Apartments account has been reactivated. You may now log in.");
+            }
+        }
+
         echo json_encode(['success' => true]);
         exit;
     }
 }
 
 // GET: List users/tenants
+if (!in_array($user['role'], ['admin', 'staff'])) {
+    http_response_code(403);
+    echo json_encode(['error' => 'Forbidden']);
+    exit;
+}
 $role = $_GET['role'] ?? '';
 $search = $_GET['search'] ?? '';
 
-$sql = "SELECT id, username, full_name, email, phone, role, profile_picture, date_of_birth, is_active, created_at FROM users WHERE 1=1";
+$sql = "SELECT id, username, full_name, email, phone, role, profile_picture, date_of_birth, is_active, created_at,
+    (SELECT r.id FROM tenancies t JOIN apartments r ON r.id = t.apartment_id WHERE t.tenant_id = users.id AND t.status = 'active' ORDER BY t.id DESC LIMIT 1) AS apartment_id,
+    (SELECT r.apartment_number FROM tenancies t JOIN apartments r ON r.id = t.apartment_id WHERE t.tenant_id = users.id AND t.status = 'active' ORDER BY t.id DESC LIMIT 1) AS apartment_number
+    FROM users WHERE 1=1";
 $params = [];
 
 if ($role) {

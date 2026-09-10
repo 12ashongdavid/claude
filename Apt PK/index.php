@@ -1,38 +1,39 @@
 <?php
-// =====================================================
-// LANDING PAGE — PK's Luxury Apartments
-// =====================================================
+// Public landing page - showcases available apartments and handles booking and report submissions.
 require_once __DIR__ . '/config/database.php';
 $db = getDB();
 
-$availableRooms = $db->query("SELECT r.*, rt.charge_period FROM rooms r LEFT JOIN room_types rt ON rt.name = r.room_type WHERE r.status = 'available' ORDER BY r.rental_price ASC")->fetchAll();
+$availableApartments = $db->query("SELECT r.*, rt.charge_period FROM apartments r LEFT JOIN apartment_types rt ON rt.name = r.apartment_type WHERE r.status = 'available' ORDER BY r.rental_price ASC")->fetchAll();
 
-// Attach a gallery of admin-uploaded images (primary + room_images) per residence
-$galleryByRoom = [];
-foreach ($db->query("SELECT room_id, image FROM room_images ORDER BY room_id, id")->fetchAll() as $g) {
-    $galleryByRoom[$g['room_id']][] = $g['image'];
+// Footer "Apartment Types" list mirrors whatever types admin/staff have set up, not a hardcoded list
+$footerApartmentTypes = $db->query("SELECT name FROM apartment_types ORDER BY id ASC")->fetchAll(PDO::FETCH_COLUMN);
+
+// Attach a gallery of admin-uploaded images (primary + apartment_images) per apartment
+$galleryByApartment = [];
+foreach ($db->query("SELECT apartment_id, image FROM apartment_images ORDER BY apartment_id, id")->fetchAll() as $g) {
+    $galleryByApartment[$g['apartment_id']][] = $g['image'];
 }
-foreach ($availableRooms as &$room) {
+foreach ($availableApartments as &$apartment) {
     // Fall back to the first gallery image if primary is missing
-    if (empty($room['image']) && !empty($galleryByRoom[$room['id']])) {
-        $room['image'] = $galleryByRoom[$room['id']][0];
+    if (empty($apartment['image']) && !empty($galleryByApartment[$apartment['id']])) {
+        $apartment['image'] = $galleryByApartment[$apartment['id']][0];
     }
     $gallery = [];
-    if (!empty($room['image']) && is_file(__DIR__ . '/uploads/rooms/' . $room['image'])) {
-        $gallery[] = 'uploads/rooms/' . $room['image'];
+    if (!empty($apartment['image']) && is_file(__DIR__ . '/uploads/apartments/' . $apartment['image'])) {
+        $gallery[] = 'uploads/apartments/' . $apartment['image'];
     }
-    foreach ($galleryByRoom[$room['id']] ?? [] as $gi) {
+    foreach ($galleryByApartment[$apartment['id']] ?? [] as $gi) {
         $gi = trim($gi);
-        if ($gi !== ($room['image'] ?? null) && is_file(__DIR__ . '/uploads/rooms/' . $gi)) {
-            $gallery[] = 'uploads/rooms/' . $gi;
+        if ($gi !== ($apartment['image'] ?? null) && is_file(__DIR__ . '/uploads/apartments/' . $gi)) {
+            $gallery[] = 'uploads/apartments/' . $gi;
         }
     }
-    $room['gallery'] = $gallery;
+    $apartment['gallery'] = $gallery;
 }
-unset($room);
-$totalRooms = $db->query("SELECT COUNT(*) FROM rooms")->fetchColumn();
-$occupiedRooms = $db->query("SELECT COUNT(*) FROM rooms WHERE status='occupied'")->fetchColumn();
-$maintenanceRooms = $db->query("SELECT COUNT(*) FROM rooms WHERE status='maintenance'")->fetchColumn();
+unset($apartment);
+$totalApartments = $db->query("SELECT COUNT(*) FROM apartments")->fetchColumn();
+$occupiedApartments = $db->query("SELECT COUNT(*) FROM apartments WHERE status='occupied'")->fetchColumn();
+$maintenanceApartments = $db->query("SELECT COUNT(*) FROM apartments WHERE status='maintenance'")->fetchColumn();
 $totalTenants = $db->query("SELECT COUNT(*) FROM users WHERE role='tenant' AND is_active=1")->fetchColumn();
 
 $success = '';
@@ -46,51 +47,56 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $full_name = trim($_POST['full_name'] ?? '');
         $email = trim($_POST['email'] ?? '');
         $phone = trim($_POST['phone'] ?? '');
-        $room_id = !empty($_POST['room_id']) ? intval($_POST['room_id']) : null;
+        $apartment_id = !empty($_POST['apartment_id']) ? intval($_POST['apartment_id']) : null;
         $preferred_date = $_POST['preferred_date'] ?? null;
         $message = trim($_POST['message'] ?? '');
         $payment_type = $_POST['payment_type'] ?? 'none';
         $payment_method = $_POST['payment_method'] ?? 'paystack';
 
-        if (empty($full_name) || empty($phone)) {
-            $error = 'Please provide your name and phone number.';
+        $emailCheck = validateEmailDetailed($email);
+        if (empty($full_name) || empty($phone) || empty($email)) {
+            $error = 'Please provide your name, phone number, and email address.';
         } elseif (!validatePhone($phone)) {
             $error = 'Phone number must be exactly 10 digits.';
+        } elseif (!$emailCheck['valid']) {
+            $error = $emailCheck['message'];
+        } elseif ($preferred_date && $preferred_date < date('Y-m-d')) {
+            $error = "Your preferred view-in date can't be in the past. Please choose today or a later date.";
         } else {
             $payment_amount = 0;
             $payment_reference = '';
             $payment_status = 'pending';
 
-            if ($payment_type !== 'none' && $room_id) {
-                $room = $db->prepare("SELECT rental_price FROM rooms WHERE id = ?");
-                $room->execute([$room_id]);
-                $roomData = $room->fetch();
-                if ($roomData) {
+            if ($payment_type !== 'none' && $apartment_id) {
+                $apartment = $db->prepare("SELECT rental_price FROM apartments WHERE id = ?");
+                $apartment->execute([$apartment_id]);
+                $apartmentData = $apartment->fetch();
+                if ($apartmentData) {
                     $payment_amount = $payment_type === 'down_payment'
-                        ? round(floatval($roomData['rental_price']) * 0.5, 2)
-                        : round(floatval($roomData['rental_price']), 2);
+                        ? round(floatval($apartmentData['rental_price']) * 0.5, 2)
+                        : round(floatval($apartmentData['rental_price']), 2);
                 }
             }
 
             if ($payment_type !== 'none' && $payment_method === 'bank_transfer') {
-                $payment_status = 'pending_verification';
+                $payment_status = 'pending';
             } elseif ($payment_type !== 'none' && $payment_method === 'cash') {
-                $payment_status = 'pending_verification';
+                $payment_status = 'pending';
             }
 
-            $stmt = $db->prepare("INSERT INTO booking_requests (full_name, email, phone, room_id, preferred_date, message, payment_type, payment_amount, payment_method, payment_reference, payment_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-            $stmt->execute([$full_name, $email, $phone, $room_id, $preferred_date, $message, $payment_type, $payment_amount, $payment_method, $payment_reference, $payment_status]);
+            $stmt = $db->prepare("INSERT INTO booking_requests (full_name, email, phone, apartment_id, preferred_date, message, payment_type, payment_amount, payment_method, payment_reference, payment_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            $stmt->execute([$full_name, $email, $phone, $apartment_id, $preferred_date, $message, $payment_type, $payment_amount, $payment_method, $payment_reference, $payment_status]);
             $bookingId = $db->lastInsertId();
 
-            // Mark residence as occupied when a booking with payment is made
-            if ($payment_type !== 'none' && $room_id) {
-                $db->prepare("UPDATE rooms SET status = 'occupied' WHERE id = ? AND status = 'available'")->execute([$room_id]);
+            // Mark apartment as occupied when a booking with payment is made
+            if ($payment_type !== 'none' && $apartment_id) {
+                $db->prepare("UPDATE apartments SET status = 'occupied' WHERE id = ? AND status = 'available'")->execute([$apartment_id]);
             }
 
             $admins = $db->query("SELECT id, phone FROM users WHERE role = 'admin'")->fetchAll();
-            $room_label = $room_id ? " (Residence #" . $room_id . ")" : "";
+            $apartment_label = $apartment_id ? " (Apartment #" . $apartment_id . ")" : "";
             $payment_note = $payment_type !== 'none' ? " Payment: " . formatCurrency($payment_amount) . "." : "";
-            $notifMsg = "$full_name has submitted a booking request$room_label.$payment_note";
+            $notifMsg = "$full_name has submitted a booking request$apartment_label.$payment_note";
             if ($admins) {
                 $placeholders = implode(',', array_fill(0, count($admins), '(?, ?, ?, ?)'));
                 $notifSql = "INSERT INTO notifications (user_id, title, message, type) VALUES $placeholders";
@@ -102,7 +108,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $notifParams[] = 'info';
                 }
                 $db->prepare($notifSql)->execute($notifParams);
-                sendSMS($admins[0]['phone'], "New booking request from $full_name$room_label. Phone: $phone$payment_note");
+                sendSMS($admins[0]['phone'], "New booking request from $full_name$apartment_label. Phone: $phone." . $payment_note);
             }
 
             sendSMS($phone, "Dear $full_name, your booking request has been received" . ($payment_type !== 'none' ? " with a payment of " . formatCurrency($payment_amount) : "") . ". PK's Luxury Apartments will contact you within 24 hours.");
@@ -130,7 +136,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     header('Location: ' . $res['data']['authorization_url']);
                     exit;
                 }
-                // If Paystack init fails, the booking is still saved — just show success
+                // If Paystack init fails, the booking is still saved - just show success
             }
         }
     }
@@ -141,8 +147,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PK's Luxury Apartments — Premium Living in Haatso, Accra</title>
-    <meta name="description" content="Experience premium apartment living at PK's Luxury Apartments in Haatso, Accra. Modern residences, excellent amenities, and affordable prices.">
+    <title>PK's Luxury Apartments | Premium Living in Haatso, Accra</title>
+    <meta name="description" content="Experience premium apartment living at PK's Luxury Apartments in Haatso, Accra. Modern apartments, excellent amenities, and affordable prices.">
     <link rel="preconnect" href="https://unpkg.com" crossorigin>
     <link rel="stylesheet" href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css">
     <link rel="stylesheet" href="css/style.css?v=18">
@@ -159,18 +165,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <!-- ============ TOP NAVIGATION ============ -->
 <nav class="booking-nav" id="bookingNav">
     <div class="booking-nav-brand">
-        <i class='bx bx-home' style="font-size:1.3rem;"></i> <span class="brand-gold">PK's</span> Luxury Apartments
+        <i class='bx bx-home' style="font-size:1.3rem;"></i> <span class="brand-gold">PK's</span> <span class="nav-brand-full">Luxury Apartments</span>
     </div>
     <div class="booking-nav-links">
         <a href="#about">About</a>
-        <a href="#rooms">Residence</a>
+        <a href="#apartments">Apartment</a>
         <a href="#amenities">Amenities</a>
         <a href="#location">Location</a>
         <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" title="Toggle dark mode" style="background:rgba(255,255,255,0.08);border-color:rgba(255,255,255,0.2);color:#fff;">
             <i class='bx bx-moon'></i>
         </button>
         <a href="javascript:void(0)" class="btn-signin" onclick="openBookingModal()">Book Now</a>
-        <a href="login.php" class="btn-signin" style="background:transparent;border:1.5px solid rgba(255,255,255,0.3);">Sign In</a>
+        <a href="login.php" class="btn-signin btn-signin-outline">Sign In</a>
     </div>
 </nav>
 
@@ -181,16 +187,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <h1>Premium Living<br>at <span>PK's</span> Luxury</h1>
         <p>Discover modern, comfortable apartments in the heart of Haatso. Affordable luxury with world-class amenities and exceptional service.</p>
         <div class="booking-hero-actions">
-            <a href="#rooms" class="btn-hero-primary">View Residences</a>
+            <a href="#apartments" class="btn-hero-primary">View Apartments</a>
             <a href="javascript:void(0)" class="btn-hero-outline" onclick="openBookingModal()" style="background:linear-gradient(135deg, var(--accent), var(--accent-dark));border-color:var(--accent);color:#fff;">Book a View</a>
         </div>
         <div class="booking-hero-stats">
             <div class="booking-hero-stat">
-                <h3><?= $totalRooms ?></h3>
-                <p>Total Residences</p>
+                <h3><?= $totalApartments ?></h3>
+                <p>Total Apartments</p>
             </div>
             <div class="booking-hero-stat">
-                <h3><?= $totalRooms - $occupiedRooms - $maintenanceRooms ?></h3>
+                <h3><?= $totalApartments - $occupiedApartments - $maintenanceApartments ?></h3>
                 <p>Available Now</p>
             </div>
             <div class="booking-hero-stat">
@@ -221,8 +227,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <div class="section-tag">About Us</div>
                 </div>
                 <h3>A Place You'll Be Proud to Call Home</h3>
-                <p>PK's Luxury Apartments is a premier residential property located in the vibrant neighborhood of Haatso, Accra. We offer a range of modern living spaces designed to meet the needs of young professionals, families, and students.</p>
-                <p>Our commitment to quality, security, and resident satisfaction makes us the preferred choice for discerning tenants in Accra.</p>
+                <p>PK's Luxury Apartments sits in the heart of Haatso, Accra, one of the city's liveliest neighborhoods. Our homes are built for young professionals, families, and students alike. Wherever you are in life, we've got a space that fits.</p>
+                <p>We care about doing the basics right: quality, security, and making sure our tenants are genuinely happy here. It's why so many people choose to call PK's home.</p>
                 <div class="about-features">
                     <div class="about-feature">
                         <span class="check"><i class='bx bx-check'></i></span> Secure environment
@@ -260,7 +266,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <div class="amenity-card">
                 <div class="amenity-icon"><i class='bx bx-wifi'></i></div>
                 <h4>High-Speed WiFi</h4>
-                <p>Free internet access in every room for work and entertainment</p>
+                <p>Free internet access in every apartment for work and entertainment</p>
             </div>
             <div class="amenity-card">
                 <div class="amenity-icon"><i class='bx bx-lock-alt'></i></div>
@@ -301,45 +307,45 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </div>
 </section>
 
-<!-- ============ ROOMS SECTION ============ -->
-<section class="booking-section" id="rooms">
+<!-- ============ APARTMENTS SECTION ============ -->
+<section class="booking-section" id="apartments">
     <div class="booking-container">
         <div class="section-header reveal">
-            <div class="section-tag">Our Residences</div>
+            <div class="section-tag">Our Apartments</div>
             <h2>Find Your Perfect Space</h2>
-            <p>Choose from our range of beautifully designed residences to suit your lifestyle and budget</p>
+            <p>Choose from our range of beautifully designed apartments to suit your lifestyle and budget</p>
         </div>
 
-        <?php if ($availableRooms): ?>
-        <div class="room-showcase-grid stagger">
-            <?php foreach ($availableRooms as $r):
-                $hasImg = !empty($r['image']) && is_file(__DIR__ . '/uploads/rooms/' . $r['image']);
+        <?php if ($availableApartments): ?>
+        <div class="apartment-showcase-grid stagger">
+            <?php foreach ($availableApartments as $r):
+                $hasImg = !empty($r['image']) && is_file(__DIR__ . '/uploads/apartments/' . $r['image']);
                 $amenityList = array_slice(explode(',', $r['amenities'] ?? ''), 0, 3);
             ?>
-            <div class="room-showcase-card" data-gallery="<?= sanitize(json_encode($r['gallery'])) ?>" data-title="Residence <?= sanitize($r['room_number']) ?>" onclick="openRoomSlideshow(this)">
-                <div class="room-showcase-img">
+            <div class="apartment-showcase-card" data-gallery="<?= sanitize(json_encode($r['gallery'])) ?>" data-title="Apartment <?= sanitize($r['apartment_number']) ?>" onclick="openApartmentSlideshow(this)">
+                <div class="apartment-showcase-img">
                         <?php if ($hasImg): ?>
-                        <img src="uploads/rooms/<?= sanitize($r['image']) ?>" alt="Residence <?= sanitize($r['room_number']) ?>">
+                        <img src="uploads/apartments/<?= sanitize($r['image']) ?>" alt="Apartment <?= sanitize($r['apartment_number']) ?>">
                     <?php else: ?>
                         <i class='bx bx-home' style="font-size:3rem;"></i>
                     <?php endif; ?>
-                    <span class="room-showcase-badge"><?= ucfirst($r['room_type']) ?></span>
-                    <span class="room-showcase-view"><i class='bx bx-expand'></i> View</span>
+                    <span class="apartment-showcase-badge"><?= sanitize(ucfirst($r['apartment_type'])) ?></span>
+                    <span class="apartment-showcase-view"><i class='bx bx-expand'></i> View</span>
                 </div>
-                <div class="room-showcase-body">
-                    <h4>Residence <?= sanitize($r['room_number']) ?></h4>
+                <div class="apartment-showcase-body">
+                    <h4>Apartment <?= sanitize($r['apartment_number']) ?></h4>
                     <div class="meta">
                         Floor <?= $r['floor'] ?>
                         <?= $r['description'] ? ' &bull; ' . sanitize(substr($r['description'], 0, 50)) . '...' : '' ?>
                     </div>
                     <?php if ($amenityList): ?>
-                    <div class="room-showcase-amenities">
+                    <div class="apartment-showcase-amenities">
                         <?php foreach ($amenityList as $a): ?>
                             <span><?= sanitize(trim($a)) ?></span>
                         <?php endforeach; ?>
                     </div>
                     <?php endif; ?>
-                    <div class="room-showcase-price">
+                    <div class="apartment-showcase-price">
                         <span class="price">GH&#8373; <?= number_format($r['rental_price'], 0) ?></span>
                         <span class="period">/<?= ($r['charge_period'] ?? 'monthly') === 'daily' ? 'day' : 'month' ?></span>
                     </div>
@@ -349,7 +355,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
         <?php else: ?>
         <div style="text-align:center;padding:40px;color:var(--text-muted);">
-            <p>All residences are currently occupied. Check back soon or submit a booking request to be notified when residences become available.</p>
+            <p>All apartments are currently occupied. Check back soon or submit a booking request to be notified when apartments become available.</p>
         </div>
         <?php endif; ?>
     </div>
@@ -366,7 +372,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <div class="testimonials-grid stagger">
             <div class="testimonial-card">
                 <div class="testimonial-text">
-                    Living at PK's Luxury Apartments has been a wonderful experience. The rooms are clean, the WiFi is fast, and the management is very responsive to any issues.
+                    My shower stopped working on a Sunday and I wasn't expecting anyone to come until Monday. Someone from maintenance showed up within the hour. That's when I knew I'd picked the right place.
                 </div>
                 <div class="testimonial-author">
                     <div class="testimonial-avatar">AA</div>
@@ -378,7 +384,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
             <div class="testimonial-card">
                 <div class="testimonial-text">
-                    The location is perfect — close to everything I need in Haatso. The rent is affordable for the quality you get. I highly recommend PK's Luxury Apartments.
+                    I picked this place mainly because I can walk to the market and catch a trotro without stress. Turned out to be a good move too, since my friends pay more for a lot less space.
                 </div>
                 <div class="testimonial-author">
                     <div class="testimonial-avatar">KB</div>
@@ -390,7 +396,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
             <div class="testimonial-card">
                 <div class="testimonial-text">
-                    Great security, reliable water and power supply. The online payment system makes rent payment so convenient. Best apartment I've lived in Accra.
+                    I used to dread rent day because it meant queuing at the office with cash. Now I just pay from my phone in a couple of minutes. Small thing, but it made a real difference for me.
                 </div>
                 <div class="testimonial-author">
                     <div class="testimonial-avatar">EM</div>
@@ -470,7 +476,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <div class="form-row">
                     <div class="form-group">
                         <label style="font-weight:700;font-size:0.85rem;">Your Name <span style="color:var(--danger);">*</span></label>
-                        <input type="text" name="reporter_name" class="form-control" placeholder="Full name" required maxlength="100">
+                        <input type="text" name="reporter_name" class="form-control" placeholder="Full name" pattern="[A-Za-z\s'\-]+" oninput="this.value=this.value.replace(/[0-9]/g,'')" required maxlength="100">
                     </div>
                     <div class="form-group">
                         <label style="font-weight:700;font-size:0.85rem;">Phone Number</label>
@@ -479,7 +485,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </div>
                 <div class="form-group">
                     <label style="font-weight:700;font-size:0.85rem;">Email Address</label>
-                    <input type="email" name="reporter_email" class="form-control" placeholder="your@email.com">
+                    <input type="email" name="reporter_email" class="form-control" placeholder="e.g. name@example.com" pattern="[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}">
                 </div>
                 <div class="form-group">
                     <label style="font-weight:700;font-size:0.85rem;">Category <span style="color:var(--danger);">*</span></label>
@@ -505,6 +511,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </section>
 </section>
 
+<!-- Booking Success Modal -->
+<div id="bookingSuccessModal" class="modal-overlay" onclick="if(event.target===this)closeBookingSuccessModal()">
+    <div style="background:#1B2A4A;border-radius:var(--radius-lg);box-shadow:var(--shadow-lg);max-width:460px;width:92%;padding:44px 32px 36px;text-align:center;position:relative;margin:20px;border:1px solid rgba(255,255,255,0.1);">
+        <button onclick="closeBookingSuccessModal()" style="position:absolute;top:12px;right:16px;background:none;border:none;font-size:1.5rem;cursor:pointer;color:rgba(255,255,255,0.5);line-height:1;" aria-label="Close">&times;</button>
+        <div style="width:76px;height:76px;border-radius:50%;background:rgba(76,175,80,0.15);display:flex;align-items:center;justify-content:center;margin:0 auto 18px;border:2px solid rgba(76,175,80,0.4);">
+            <i class="bx bx-check-circle" style="font-size:2.6rem;color:#4CAF50;"></i>
+        </div>
+        <h3 style="font-size:1.25rem;margin-bottom:10px;color:#FFFFFF;font-weight:700;">Booking Request Submitted</h3>
+        <p style="color:rgba(255,255,255,0.7);font-size:0.9rem;line-height:1.6;margin-bottom:28px;">We've received your request and will contact you soon.</p>
+        <button onclick="closeBookingSuccessModal()" style="background:linear-gradient(135deg,#4CAF50,#388E3C);color:#fff;border:none;padding:12px 32px;border-radius:var(--radius-sm);font-size:0.95rem;font-weight:600;cursor:pointer;min-width:160px;transition:opacity 0.2s;" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">OK, Got It</button>
+    </div>
+</div>
+
 <!-- ============ BOOKING MODAL ============ -->
 <div id="bookingModal" class="modal-overlay" onclick="if(event.target===this)closeBookingModal()">
     <div class="booking-form-card" style="max-width:680px;width:95%;max-height:92vh;overflow-y:auto;position:relative;margin:20px;background:#1B2A4A;border-radius:var(--radius-lg);box-shadow:var(--shadow-lg);border:1px solid rgba(255,255,255,0.12);">
@@ -517,7 +536,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <div class="form-row">
                 <div class="form-group">
                     <label>Full Name *</label>
-                    <input type="text" name="full_name" class="form-control" placeholder="Your full name" value="<?= sanitize($_POST['full_name'] ?? '') ?>" required>
+                    <input type="text" name="full_name" class="form-control" placeholder="Your full name" pattern="[A-Za-z\s'\-]+" oninput="this.value=this.value.replace(/[0-9]/g,'')" value="<?= sanitize($_POST['full_name'] ?? '') ?>" required>
                 </div>
                 <div class="form-group">
                     <label>Phone Number *</label>
@@ -525,17 +544,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </div>
             </div>
             <div class="form-group">
-                <label>Email Address</label>
-                <input type="email" name="email" class="form-control" placeholder="your@email.com" value="<?= sanitize($_POST['email'] ?? '') ?>">
+                <label>Email Address *</label>
+                <input type="email" name="email" class="form-control" placeholder="e.g. name@example.com" pattern="[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}" value="<?= sanitize($_POST['email'] ?? '') ?>" required>
             </div>
             <div class="form-row">
                 <div class="form-group">
-                    <label>Preferred Residence</label>
-                    <select name="room_id" class="form-control">
-                        <option value="">Any available room</option>
-                        <?php foreach ($availableRooms as $r): ?>
-                        <option value="<?= $r['id'] ?>" <?= (isset($_POST['room_id']) && $_POST['room_id'] == $r['id']) ? 'selected' : '' ?>>
-                            <?= sanitize($r['room_number']) ?> — <?= ucfirst($r['room_type']) ?> — GH&#8373; <?= number_format($r['rental_price'], 0) ?>/<?= ($r['charge_period'] ?? 'monthly') === 'daily' ? 'day' : 'mo' ?>
+                    <label>Preferred Apartment</label>
+                    <select name="apartment_id" class="form-control">
+                        <option value="">Any available apartment</option>
+                        <?php foreach ($availableApartments as $r): ?>
+                        <option value="<?= $r['id'] ?>" <?= (isset($_POST['apartment_id']) && $_POST['apartment_id'] == $r['id']) ? 'selected' : '' ?>>
+                            <?= sanitize($r['apartment_number']) ?> &bull; <?= sanitize(ucfirst($r['apartment_type'])) ?> &bull; GH&#8373; <?= number_format($r['rental_price'], 0) ?>/<?= ($r['charge_period'] ?? 'monthly') === 'daily' ? 'day' : 'mo' ?>
                         </option>
                         <?php endforeach; ?>
                     </select>
@@ -582,23 +601,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <div class="footer-grid">
         <div class="footer-brand">
             <h3><i class='bx bx-home'></i> <span class="brand-gold">PK's</span> <span style="color:#fff;">Luxury Apartments</span></h3>
-            <p>Premium apartment living in Haatso, Accra. Modern residences, excellent amenities, and a commitment to tenant satisfaction.</p>
+            <p>Premium apartment living in Haatso, Accra: modern apartments, great amenities, and tenants who actually love living here.</p>
         </div>
         <div class="footer-col">
             <h4>Quick Links</h4>
             <a href="#about">About Us</a>
-            <a href="#rooms">Our Residences</a>
+            <a href="#apartments">Our Apartments</a>
             <a href="#amenities">Amenities</a>
             <a href="#location">Location</a>
             <a href="#report">Send a Report</a>
         </div>
+        <?php if ($footerApartmentTypes): ?>
         <div class="footer-col">
-            <h4>Residence Types</h4>
-            <a href="#rooms">Single Residence</a>
-            <a href="#rooms">Double Residence</a>
-            <a href="#rooms">Studio</a>
-            <a href="#rooms">Penthouse</a>
+            <h4>Apartment Types</h4>
+            <?php foreach ($footerApartmentTypes as $type): ?>
+            <a href="#apartments"><?= sanitize(ucfirst($type)) ?></a>
+            <?php endforeach; ?>
         </div>
+        <?php endif; ?>
         <div class="footer-col">
             <h4>Contact</h4>
             <a href="tel:0554016037"><i class='bx bx-phone'></i> 055 401 6037</a>
@@ -612,21 +632,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </div>
 </footer>
 
-<!-- ============ RESIDENCE SLIDESHOW MODAL ============ -->
-<div class="room-slideshow" id="roomSlideshow" aria-hidden="true">
-    <div class="room-slideshow-backdrop" onclick="closeRoomSlideshow()"></div>
-    <div class="room-slideshow-panel">
-        <button class="room-slideshow-close" onclick="closeRoomSlideshow()" aria-label="Close"><i class='bx bx-x'></i></button>
-        <div class="room-slideshow-head">
-            <h4 id="roomSlideshowTitle">Residence</h4>
-            <span class="room-slideshow-count" id="roomSlideshowCount"></span>
+<!-- ============ APARTMENT SLIDESHOW MODAL ============ -->
+<div class="apartment-slideshow" id="apartmentSlideshow" aria-hidden="true">
+    <div class="apartment-slideshow-backdrop" onclick="closeApartmentSlideshow()"></div>
+    <div class="apartment-slideshow-panel">
+        <button class="apartment-slideshow-close" onclick="closeApartmentSlideshow()" aria-label="Close"><i class='bx bx-x'></i></button>
+        <div class="apartment-slideshow-head">
+            <h4 id="apartmentSlideshowTitle">Apartment</h4>
+            <span class="apartment-slideshow-count" id="apartmentSlideshowCount"></span>
         </div>
-        <div class="room-slideshow-stage">
-            <button class="room-slideshow-arrow prev" onclick="roomSlideshowMove(-1)" aria-label="Previous"><i class='bx bx-chevron-left'></i></button>
-            <div class="room-slideshow-track" id="roomSlideshowTrack"></div>
-            <button class="room-slideshow-arrow next" onclick="roomSlideshowMove(1)" aria-label="Next"><i class='bx bx-chevron-right'></i></button>
+        <div class="apartment-slideshow-stage">
+            <button class="apartment-slideshow-arrow prev" onclick="apartmentSlideshowMove(-1)" aria-label="Previous"><i class='bx bx-chevron-left'></i></button>
+            <div class="apartment-slideshow-track" id="apartmentSlideshowTrack"></div>
+            <button class="apartment-slideshow-arrow next" onclick="apartmentSlideshowMove(1)" aria-label="Next"><i class='bx bx-chevron-right'></i></button>
         </div>
-        <div class="room-slideshow-thumbs" id="roomSlideshowThumbs"></div>
+        <div class="apartment-slideshow-thumbs" id="apartmentSlideshowThumbs"></div>
     </div>
 </div>
 
@@ -677,72 +697,72 @@ document.querySelectorAll('a[href^="#"]').forEach(function(a) {
     targets.forEach(el => obs.observe(el));
 })();
 
-// ============ RESIDENCE SLIDESHOW POPUP ============
-let roomSlideIndex = 0;
-let roomSlideList = [];
-const slideshowModal = document.getElementById('roomSlideshow');
+// ============ APARTMENT SLIDESHOW POPUP ============
+let apartmentSlideIndex = 0;
+let apartmentSlideList = [];
+const slideshowModal = document.getElementById('apartmentSlideshow');
 
-function openRoomSlideshow(card) {
+function openApartmentSlideshow(card) {
     let gallery = [];
     try { gallery = JSON.parse(card.getAttribute('data-gallery') || '[]'); }
     catch (e) { gallery = []; }
-    const title = card.getAttribute('data-title') || 'Residence';
+    const title = card.getAttribute('data-title') || 'Apartment';
     const img = card.querySelector('img');
     if (gallery.length === 0 && img) gallery = [img.getAttribute('src')];
 
-    document.getElementById('roomSlideshowTitle').textContent = title;
-    const track = document.getElementById('roomSlideshowTrack');
-    const thumbs = document.getElementById('roomSlideshowThumbs');
+    document.getElementById('apartmentSlideshowTitle').textContent = title;
+    const track = document.getElementById('apartmentSlideshowTrack');
+    const thumbs = document.getElementById('apartmentSlideshowThumbs');
     track.innerHTML = '';
     thumbs.innerHTML = '';
-    roomSlideList = gallery;
+    apartmentSlideList = gallery;
 
     if (gallery.length === 0) {
-        track.innerHTML = '<div class="room-slideshow-empty"><i class="bx bx-home"></i><p>No photos available yet for this residence.</p></div>';
-        document.getElementById('roomSlideshowCount').textContent = '';
+        track.innerHTML = '<div class="apartment-slideshow-empty"><i class="bx bx-home"></i><p>No photos available yet for this apartment.</p></div>';
+        document.getElementById('apartmentSlideshowCount').textContent = '';
     } else {
         gallery.forEach((src, i) => {
             const slide = document.createElement('div');
-            slide.className = 'room-slideshow-slide';
+            slide.className = 'apartment-slideshow-slide';
             slide.innerHTML = '<img src="' + src + '" alt="' + title + ' - photo ' + (i + 1) + '">';
             track.appendChild(slide);
 
             const thumb = document.createElement('button');
-            thumb.className = 'room-slideshow-thumb';
+            thumb.className = 'apartment-slideshow-thumb';
             thumb.innerHTML = '<img src="' + src + '" alt="">';
-            thumb.onclick = function() { roomSlideshowGoto(i); };
+            thumb.onclick = function() { apartmentSlideshowGoto(i); };
             thumbs.appendChild(thumb);
         });
-        document.getElementById('roomSlideshowCount').textContent = gallery.length + (gallery.length === 1 ? ' photo' : ' photos');
+        document.getElementById('apartmentSlideshowCount').textContent = gallery.length + (gallery.length === 1 ? ' photo' : ' photos');
     }
 
-    roomSlideIndex = 0;
-    roomSlideshowRender();
+    apartmentSlideIndex = 0;
+    apartmentSlideshowRender();
     slideshowModal.classList.add('show');
     slideshowModal.setAttribute('aria-hidden', 'false');
     document.body.style.overflow = 'hidden';
 }
 
-function roomSlideshowRender() {
-    const track = document.getElementById('roomSlideshowTrack');
-    const thumbs = document.querySelectorAll('#roomSlideshowThumbs .room-slideshow-thumb');
-    if (roomSlideList.length === 0) return;
-    track.style.transform = 'translateX(' + (-roomSlideIndex * 100) + '%)';
-    thumbs.forEach((t, i) => t.classList.toggle('active', i === roomSlideIndex));
+function apartmentSlideshowRender() {
+    const track = document.getElementById('apartmentSlideshowTrack');
+    const thumbs = document.querySelectorAll('#apartmentSlideshowThumbs .apartment-slideshow-thumb');
+    if (apartmentSlideList.length === 0) return;
+    track.style.transform = 'translateX(' + (-apartmentSlideIndex * 100) + '%)';
+    thumbs.forEach((t, i) => t.classList.toggle('active', i === apartmentSlideIndex));
 }
 
-function roomSlideshowMove(dir) {
-    if (roomSlideList.length === 0) return;
-    roomSlideIndex = (roomSlideIndex + dir + roomSlideList.length) % roomSlideList.length;
-    roomSlideshowRender();
+function apartmentSlideshowMove(dir) {
+    if (apartmentSlideList.length === 0) return;
+    apartmentSlideIndex = (apartmentSlideIndex + dir + apartmentSlideList.length) % apartmentSlideList.length;
+    apartmentSlideshowRender();
 }
 
-function roomSlideshowGoto(i) {
-    roomSlideIndex = i;
-    roomSlideshowRender();
+function apartmentSlideshowGoto(i) {
+    apartmentSlideIndex = i;
+    apartmentSlideshowRender();
 }
 
-function closeRoomSlideshow() {
+function closeApartmentSlideshow() {
     slideshowModal.classList.remove('show');
     slideshowModal.setAttribute('aria-hidden', 'true');
     document.body.style.overflow = '';
@@ -750,9 +770,9 @@ function closeRoomSlideshow() {
 
 document.addEventListener('keydown', function(e) {
     if (!slideshowModal.classList.contains('show')) return;
-    if (e.key === 'Escape') closeRoomSlideshow();
-    if (e.key === 'ArrowLeft') roomSlideshowMove(-1);
-    if (e.key === 'ArrowRight') roomSlideshowMove(1);
+    if (e.key === 'Escape') closeApartmentSlideshow();
+    if (e.key === 'ArrowLeft') apartmentSlideshowMove(-1);
+    if (e.key === 'ArrowRight') apartmentSlideshowMove(1);
 });
 
 // ============ PUBLIC REPORT FORM ============
@@ -769,6 +789,14 @@ async function submitPublicReport(e) {
     const origText = btn.innerHTML;
     btn.innerHTML = '<i class="bx bx-loader-alt bx-spin"></i> Sending...';
     btn.disabled = true;
+    // This form can sit open a while as visitors browse apartments, so the
+    // original session may have expired by now - grab a fresh token
+    // right before submitting instead of risking a stale one.
+    try {
+        const csrfRes = await fetch('api/csrf_token.php');
+        const csrfData = await csrfRes.json();
+        if (csrfData && csrfData.csrf_token) form.set('csrf_token', csrfData.csrf_token);
+    } catch (csrfErr) { /* fall through with the original token */ }
     const res = await fetch('api/feedback.php', { method: 'POST', body: form });
     const data = await res.json();
     btn.innerHTML = origText;
@@ -796,6 +824,10 @@ function closeBookingModal() {
     modal.classList.remove('active');
     document.body.style.overflow = 'auto';
 }
+function closeBookingSuccessModal() {
+    document.getElementById('bookingSuccessModal').classList.remove('active');
+    document.body.style.overflow = '';
+}
 document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeBookingModal(); });
 
 // ============ BOOKING MODAL AJAX ============
@@ -817,18 +849,23 @@ async function submitBookingModal(e) {
     btn.innerHTML = '<i class="bx bx-loader-alt bx-spin"></i> Submitting...';
     btn.disabled = true;
     try {
+        // This form can sit open a while as visitors browse apartments, so the
+        // original session may have expired by now - grab a fresh token
+        // right before submitting instead of risking a stale one.
+        try {
+            const csrfRes = await fetch('api/csrf_token.php');
+            const csrfData = await csrfRes.json();
+            if (csrfData && csrfData.csrf_token) form.set('csrf_token', csrfData.csrf_token);
+        } catch (csrfErr) { /* fall through with the original token */ }
         const res = await fetch('api/bookings.php', { method: 'POST', body: form });
         const data = await res.json();
         btn.innerHTML = origText;
         btn.disabled = false;
         if (data.success) {
-            const suc = document.getElementById('bookingModalSuccess');
-            suc.querySelector('span').textContent = data.message || 'Your booking request has been submitted! We will contact you within 24 hours.';
-            suc.style.display = 'block';
             e.target.reset();
-            showToast('Booking request submitted!', 'success');
-            suc.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            setTimeout(() => { suc.style.display = 'none'; }, 8000);
+            closeBookingModal();
+            document.getElementById('bookingSuccessModal').classList.add('active');
+            document.body.style.overflow = 'hidden';
         } else {
             alert(data.error || 'Error submitting booking. Please try again.');
         }
@@ -843,17 +880,17 @@ async function submitBookingModal(e) {
 function updateBookingPaymentInfo() {
     const type = document.getElementById('paymentType').value;
     const info = document.getElementById('bookingPaymentInfo');
-    const roomSelect = document.querySelector('select[name="room_id"]');
-    const roomId = roomSelect ? roomSelect.value : '';
+    const apartmentSelect = document.querySelector('select[name="apartment_id"]');
+    const apartmentId = apartmentSelect ? apartmentSelect.value : '';
     const method = document.getElementById('paymentMethod').value;
 
-    if (type === 'none' || !roomId) {
+    if (type === 'none' || !apartmentId) {
         info.style.display = 'none';
         return;
     }
 
     let price = 0;
-    const selected = roomSelect.options[roomSelect.selectedIndex];
+    const selected = apartmentSelect.options[apartmentSelect.selectedIndex];
     if (selected && selected.value) {
         const match = selected.text.match(/GH[^\d]*([\d,]+)/);
         if (match) price = parseFloat(match[1].replace(/,/g, ''));
@@ -869,12 +906,13 @@ function updateBookingPaymentInfo() {
     const methodLabel = method === 'paystack' ? 'Mobile Money' : 'Bank Transfer';
 
     info.innerHTML = '<strong>' + label + ':</strong> GH&#8373; ' + amount.toLocaleString(undefined, {minimumFractionDigits:2}) +
-        ' via ' + methodLabel + (method === 'bank_transfer' ? ' — Bank details will be shown after submission.' : '') +
-        (method === 'paystack' ? ' — You will be redirected to complete payment.' : '') +
+        ' via ' + methodLabel + (method === 'bank_transfer' ? '. Bank details will be shown after submission.' : '') +
+        (method === 'paystack' ? '. You will be redirected to complete payment.' : '') +
         '<br><span style="font-size:0.78rem;color:var(--warning);font-weight:600;">Balance must be paid within 1 week of move-in.</span>';
     info.style.display = 'block';
 }
 </script>
+<script src="js/email-validator.js"></script>
 
 </body>
 </html>

@@ -1,8 +1,5 @@
 <?php
-// =====================================================
-// API: Tenant Agreements — upload / list / view / delete
-// PK's Luxury Apartments — Apartment Management System
-// =====================================================
+// Lets admins/staff upload and manage tenant agreement documents, and lets tenants view or download their own.
 require_once __DIR__ . '/../config/database.php';
 requireLogin();
 
@@ -30,8 +27,9 @@ if (($_GET['action'] ?? '') === 'view') {
         exit('File missing.');
     }
     $disposition = ($_GET['download'] ?? '') === '1' ? 'attachment' : 'inline';
+    $safeName = str_replace(['"', '\\'], '', $agreement['original_name']);
     header('Content-Type: ' . $agreement['file_type']);
-    header('Content-Disposition: ' . $disposition . '; filename="' . $agreement['original_name'] . '"');
+    header('Content-Disposition: ' . $disposition . '; filename="' . $safeName . '"');
     header('Content-Length: ' . filesize($path));
     readfile($path);
     exit;
@@ -80,7 +78,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         $orig = basename($_FILES['agreement_file']['name']);
-        $ext = strtolower(pathinfo($orig, PATHINFO_EXTENSION));
+        $finfo = new finfo(FILEINFO_MIME_TYPE);
+        $ext = safeUploadExtension($finfo->file($_FILES['agreement_file']['tmp_name']));
         $stored = 'agr_' . $tenant_id . '_' . time() . '_' . bin2hex(random_bytes(4)) . '.' . $ext;
         $dir = UPLOAD_PATH . 'agreements/';
         if (!is_dir($dir)) {
@@ -103,7 +102,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt = $db->prepare("INSERT INTO notifications (user_id, title, message, type, link) VALUES (?, 'Tenancy Agreement Uploaded', ?, 'info', 'dashboard.php')");
         $stmt->execute([$tenant_id, 'A tenancy agreement document has been uploaded to your dashboard.']);
         if (!empty($tenant['phone'])) {
-            sendSMS($tenant['phone'], "Dear " . $tenant['full_name'] . ", your tenancy agreement has been uploaded to your dashboard at PK's Luxury Apartments.");
+            sendSMS($tenant['phone'], "Dear " . $tenant['full_name'] . ", your tenancy agreement has been uploaded to your dashboard at PK's Luxury Apartments. Log in to view or download it.");
         }
 
         echo json_encode(['success' => true, 'id' => $agreement_id]);
@@ -153,13 +152,13 @@ if (!in_array($user['role'], ['admin', 'staff'])) {
     exit;
 }
 $sql = "SELECT a.id, a.tenant_id, a.original_name, a.file_size, a.file_type, a.notes, a.created_at,
-               u.full_name AS tenant_name, u.username AS tenant_username, ru.room_number,
+               u.full_name AS tenant_name, u.username AS tenant_username, ru.apartment_number,
                up.full_name AS uploaded_by_name
         FROM tenant_agreements a
         JOIN users u ON a.tenant_id = u.id
         LEFT JOIN users up ON a.uploaded_by = up.id
         LEFT JOIN tenancies t ON t.tenant_id = a.tenant_id AND t.status = 'active'
-        LEFT JOIN rooms ru ON t.room_id = ru.id
+        LEFT JOIN apartments ru ON t.apartment_id = ru.id
         WHERE 1=1";
 $params = [];
 if (!empty($_GET['tenant_id'])) {

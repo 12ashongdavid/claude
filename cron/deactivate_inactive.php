@@ -1,10 +1,6 @@
 <?php
-// =====================================================
-// Cron: Auto-Deactivate Inactive Accounts
-// Deactivates tenants/staff who haven't logged in for 365 days.
-// Schedule: Run daily via cron (e.g. 0 2 * * * php /path/to/cron/deactivate_inactive.php)
-// PK's Luxury Apartments — Apartment Management System
-// =====================================================
+// Daily cron job: deactivates tenants/staff who haven't logged in for 365 days.
+// Schedule example: 0 2 * * * php /path/to/cron/deactivate_inactive.php
 require_once __DIR__ . '/../config/database.php';
 $db = getDB();
 
@@ -41,21 +37,23 @@ foreach ($inactiveUsers as $u) {
         $upd->execute([$u['id']]);
 
         // End any active tenancy
-        $tenancy = $db->prepare("UPDATE tenancies SET status = 'ended', end_date = CURDATE() WHERE tenant_id = ? AND status = 'active'");
+        $apartmentIds = $db->prepare("SELECT apartment_id FROM tenancies WHERE tenant_id = ? AND status = 'active'");
+        $apartmentIds->execute([$u['id']]);
+        $freedApartments = $apartmentIds->fetchAll(PDO::FETCH_COLUMN);
+
+        $tenancy = $db->prepare("UPDATE tenancies SET status = 'terminated', end_date = CURDATE() WHERE tenant_id = ? AND status = 'active'");
         $tenancy->execute([$u['id']]);
 
-        // Free up their room(s)
-        $tenanted = $db->prepare("
-            UPDATE rooms r
-            JOIN tenancies t ON t.room_id = r.id
-            SET r.status = 'available'
-            WHERE t.tenant_id = ? AND t.status = 'ended'
-        ");
-        $tenanted->execute([$u['id']]);
+        // Free up their apartment(s)
+        if ($freedApartments) {
+            $placeholders = implode(',', array_fill(0, count($freedApartments), '?'));
+            $tenanted = $db->prepare("UPDATE apartments SET status = 'available' WHERE id IN ($placeholders) AND status = 'occupied'");
+            $tenanted->execute($freedApartments);
+        }
 
         // Log notification
         $logMsg = $u['last_login']
-            ? "Account deactivated: no login since " . date('M j, Y', strtotime($u['last_login'])) . " (>{inactiveDays} days)."
+            ? "Account deactivated: no login since " . date('M j, Y', strtotime($u['last_login'])) . " (>{$inactiveDays} days)."
             : "Account deactivated: never logged in. Account created " . date('M j, Y', strtotime($u['created_at'])) . " (>{$inactiveDays} days ago).";
 
         // Notify admin
@@ -71,10 +69,10 @@ foreach ($inactiveUsers as $u) {
 
         sendSMS($u['phone'], "Dear {$u['full_name']}, your PK's Luxury Apartments account has been deactivated due to inactivity. Please contact management to reactivate.");
 
-        echo "Deactivated: {$u['full_name']} ({$u['role']}) — {$logMsg}\n";
+        echo "Deactivated: {$u['full_name']} ({$u['role']}) - {$logMsg}\n";
         $deactivated++;
     } catch (Exception $e) {
-        echo "FAILED: {$u['full_name']} — " . $e->getMessage() . "\n";
+        echo "FAILED: {$u['full_name']} - " . $e->getMessage() . "\n";
         $failed++;
     }
 }

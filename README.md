@@ -1,4 +1,4 @@
-# PK's Luxury Apartments — Apartment Management System
+# PK's Luxury Apartments - Apartment Management System
 
 ## Requirements
 
@@ -51,7 +51,7 @@ C:\xampp\mysql\bin\mysql -u root < "C:\xampp\htdocs\Apt PK\setup.sql"
 
 > `setup.sql` is self-contained (all tables, columns, and enums, plus seed data).
 > For **existing** databases, apply the ordered scripts in `database/migrations/`
-> instead — see `database/migrations/README.md`.
+> instead - see `database/migrations/README.md`.
 
 ### 4. Configure Database Connection
 
@@ -71,7 +71,7 @@ Change these if your MySQL uses a different user/password.
 Ensure these folders exist and are writable:
 
 ```
-uploads/rooms/
+uploads/apartments/
 uploads/profiles/
 ```
 
@@ -133,12 +133,12 @@ Apt PK/
 ├── api/                      # RESTful API endpoints
 ├── css/style.css             # All styles
 ├── js/app.js                 # JS: sidebar, modals, toasts, CSRF
-├── uploads/                  # User uploads (rooms, profiles)
+├── uploads/                  # User uploads (apartments, profiles)
 ├── index.php                 # Landing page
 ├── login.php                 # Login page
 ├── register.php              # Tenant self-registration
 ├── dashboard.php             # Role-based dashboard
-├── rooms.php                 # Room management
+├── apartments.php                 # Apartment management
 ├── tenants.php               # Tenant management
 ├── bookings.php              # Booking requests
 ├── payments.php              # Rent payments
@@ -177,3 +177,12 @@ If you need to generate bcrypt hashes manually:
 ```
 C:\xampp\php\php.exe -r "echo password_hash('Admin@123', PASSWORD_DEFAULT);"
 ```
+
+---
+
+## Automated Testing & Deployment
+
+Every push and pull request runs a lint + test + smoke-test pipeline
+automatically via GitHub Actions - see [DEPLOYMENT.md](DEPLOYMENT.md)
+for how to run the same tests locally and how to (optionally) enable
+automatic deployment to production.

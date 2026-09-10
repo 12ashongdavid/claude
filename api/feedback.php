@@ -1,8 +1,5 @@
 <?php
-// =====================================================
-// API: Feedback Reports (tenant + public submissions, admin management)
-// PK's Luxury Apartments — Apartment Management System
-// =====================================================
+// Handles feedback/complaint reports from tenants and the public, plus admin replies and status tracking.
 require_once __DIR__ . '/../config/database.php';
 
 header('Content-Type: application/json');
@@ -50,12 +47,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             echo json_encode(['error' => 'Your name is required.']);
             exit;
         }
+        if (!validateName($reporterName)) {
+            echo json_encode(['error' => 'Name must contain letters only (no numbers).']);
+            exit;
+        }
         if (!empty($reporterPhone) && !validatePhone($reporterPhone)) {
             echo json_encode(['error' => 'Phone number must be exactly 10 digits (numbers only).']);
             exit;
         }
-        if (!empty($reporterEmail) && !validateEmail($reporterEmail)) {
-            echo json_encode(['error' => 'Please enter a valid email address.']);
+        $emailCheck = validateEmailDetailed($reporterEmail);
+        if (!$emailCheck['valid']) {
+            echo json_encode(['error' => $emailCheck['message']]);
             exit;
         }
 
@@ -63,21 +65,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt->execute([$userId, $reporterName, $reporterEmail, $reporterPhone, $category, $subject, $message]);
 
         // Notify all active admins in one query
-        $admins = $db->query("SELECT id FROM users WHERE role = 'admin' AND is_active = 1")->fetchAll(PDO::FETCH_COLUMN);
+        $admins = $db->query("SELECT id, phone FROM users WHERE role = 'admin' AND is_active = 1")->fetchAll();
         if ($admins) {
             $placeholders = implode(',', array_fill(0, count($admins), '(?, ?, ?, ?)'));
             $notifSql = "INSERT INTO notifications (user_id, title, message, type) VALUES $placeholders";
             $notifParams = [];
-            foreach ($admins as $adminId) {
-                $notifParams[] = $adminId;
+            foreach ($admins as $admin) {
+                $notifParams[] = $admin['id'];
                 $notifParams[] = 'New Feedback Report';
                 $notifParams[] = "$reporterName submitted a $category report: $subject";
                 $notifParams[] = 'info';
             }
             $db->prepare($notifSql)->execute($notifParams);
+
+            foreach ($admins as $admin) {
+                sendSMS($admin['phone'], "New $category report from $reporterName: $subject");
+            }
         }
 
-        echo json_encode(['success' => true, 'message' => 'Your report has been submitted. We will review it shortly.']);
+        echo json_encode(['success' => true, 'message' => "Thanks! We've got your report and will get back to you soon."]);
         exit;
     }
 
@@ -106,6 +112,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $adminUser = currentUser();
         $stmt = $db->prepare("UPDATE feedback_reports SET admin_reply = ?, admin_reply_by = ?, admin_reply_at = NOW(), status = ? WHERE id = ?");
         $stmt->execute([$reply, $adminUser['id'], $status, $id]);
+        if ($stmt->rowCount() === 0) {
+            echo json_encode(['error' => 'Report not found.']);
+            exit;
+        }
 
         // Notify the reporter
         $stmt2 = $db->prepare("SELECT user_id, reporter_name, reporter_phone FROM feedback_reports WHERE id = ?");
@@ -168,6 +178,18 @@ requireLogin();
 if (!in_array(currentUser()['role'], ['admin', 'staff'])) {
     http_response_code(403);
     echo json_encode(['error' => 'Forbidden']);
+    exit;
+}
+
+// Always the true totals, regardless of any status/category filter applied
+// to the list below - the dashboard stat cards call this after every change.
+if (($_GET['counts'] ?? '') === '1') {
+    echo json_encode([
+        'total' => (int) $db->query("SELECT COUNT(*) FROM feedback_reports")->fetchColumn(),
+        'new' => (int) $db->query("SELECT COUNT(*) FROM feedback_reports WHERE status='new'")->fetchColumn(),
+        'in_progress' => (int) $db->query("SELECT COUNT(*) FROM feedback_reports WHERE status='in_progress'")->fetchColumn(),
+        'resolved' => (int) $db->query("SELECT COUNT(*) FROM feedback_reports WHERE status='resolved'")->fetchColumn(),
+    ]);
     exit;
 }
 

@@ -1,8 +1,5 @@
 <?php
-// =====================================================
-// Feedback Reports Page (Admin/Staff) — polished UI
-// PK's Luxury Apartments — Apartment Management System
-// =====================================================
+// Lets admin/staff review feedback and complaints from tenants and visitors, and reply to them.
 require_once __DIR__ . '/config/database.php';
 $pageTitle = 'Feedback Reports';
 requireRole(['admin', 'staff']);
@@ -75,7 +72,7 @@ include __DIR__ . '/includes/header.php';
         <div class="modal-body" style="padding:24px;">
             <div id="replyReportInfo" style="margin-bottom:16px;"></div>
             <form id="replyForm" onsubmit="submitReply(event)">
-                <input type="hidden" name="report_id" id="replyReportId">
+                <input type="hidden" name="id" id="replyReportId">
                 <div class="form-group">
                     <label style="font-weight:700;font-size:0.85rem;">Update Status</label>
                     <select name="status" id="replyStatus" class="form-control">
@@ -110,6 +107,18 @@ async function loadFeedback() {
     allFeedback = await res.json();
     renderFeedback(allFeedback);
     document.getElementById('feedbackCount').textContent = allFeedback.length + ' report(s)';
+    refreshFeedbackCounts();
+}
+
+// The stat cards must always reflect the true totals, not just the
+// currently filtered list, so they're refreshed from their own query.
+async function refreshFeedbackCounts() {
+    const res = await fetch('api/feedback.php?counts=1');
+    const c = await res.json();
+    document.getElementById('statTotal').textContent = c.total;
+    document.getElementById('statNew').textContent = c.new;
+    document.getElementById('statProgress').textContent = c.in_progress;
+    document.getElementById('statResolved').textContent = c.resolved;
 }
 
 function renderFeedback(reports) {

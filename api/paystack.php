@@ -1,8 +1,5 @@
 <?php
-// =====================================================
-// API: Paystack — initialize + verify callback
-// PK's Luxury Apartments — Apartment Management System
-// =====================================================
+// Initializes Paystack transactions for rent and utility payments, and verifies the callback once Paystack redirects back.
 ob_start();
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../config/paystack_helper.php';
@@ -42,7 +39,7 @@ if (($_GET['action'] ?? '') === 'verify') {
         exit;
     }
 
-    setFlash('error', 'Payment was not completed — no charge was made. You can try again.');
+    setFlash('error', 'Payment was not completed - no charge was made. You can try again.');
     if ($from === 'utility') {
         header('Location: ../utilities.php?paid=0');
     } elseif ($from === 'booking') {
@@ -122,7 +119,7 @@ if ($type === 'rent') {
         exit;
     }
 
-    $stmt = $db->prepare("SELECT room_id, monthly_rent FROM tenancies WHERE tenant_id = ? AND status = 'active' ORDER BY id DESC LIMIT 1");
+    $stmt = $db->prepare("SELECT apartment_id, monthly_rent FROM tenancies WHERE tenant_id = ? AND status = 'active' ORDER BY id DESC LIMIT 1");
     $stmt->execute([$user['id']]);
     $ten = $stmt->fetch();
     if (!$ten) {

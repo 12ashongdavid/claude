@@ -1,8 +1,5 @@
 <?php
-// =====================================================
-// Utility Bill Receipt
-// PK's Luxury Apartments — Apartment Management System
-// =====================================================
+// Renders a printable receipt for a paid utility bill.
 require_once __DIR__ . '/config/database.php';
 requireLogin();
 
@@ -13,7 +10,7 @@ if (!$id) {
     die('Invalid bill ID.');
 }
 
-$stmt = $db->prepare("SELECT ub.*, u.full_name as tenant_name, u.phone as tenant_phone, u.email as tenant_email, r.room_number, r.room_type FROM utility_bills ub JOIN users u ON ub.tenant_id = u.id JOIN rooms r ON ub.room_id = r.id WHERE ub.id = ?");
+$stmt = $db->prepare("SELECT ub.*, u.full_name as tenant_name, u.phone as tenant_phone, u.email as tenant_email, r.apartment_number, r.apartment_type FROM utility_bills ub JOIN users u ON ub.tenant_id = u.id JOIN apartments r ON ub.apartment_id = r.id WHERE ub.id = ?");
 $stmt->execute([$id]);
 $bill = $stmt->fetch();
 
@@ -31,7 +28,7 @@ if ($user['role'] === 'tenant' && $bill['tenant_id'] != $user['id']) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Utility Bill Receipt — <?= strtoupper($bill['bill_type']) ?></title>
+    <title>Utility Bill Receipt - <?= strtoupper($bill['bill_type']) ?></title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', Arial, sans-serif; color: #1A1A1A; background: #f5f5f5; }
@@ -129,7 +126,7 @@ if ($user['role'] === 'tenant' && $bill['tenant_id'] != $user['id']) {
         </div>
         <div class="receipt-row">
             <span class="label">Payment Date</span>
-            <span class="value"><?= $bill['payment_date'] ? date('F j, Y', strtotime($bill['payment_date'])) : '—' ?></span>
+            <span class="value"><?= $bill['payment_date'] ? date('F j, Y', strtotime($bill['payment_date'])) : '-' ?></span>
         </div>
     </div>
 
@@ -143,8 +140,8 @@ if ($user['role'] === 'tenant' && $bill['tenant_id'] != $user['id']) {
             <span class="value"><?= sanitize($bill['tenant_phone'] ?? 'N/A') ?></span>
         </div>
         <div class="receipt-row" style="border-bottom-color:#D4D6E5;">
-            <span class="label">Room Number</span>
-            <span class="value"><?= sanitize($bill['room_number']) ?> (<?= ucfirst($bill['room_type']) ?>)</span>
+            <span class="label">Apartment Number</span>
+            <span class="value"><?= sanitize($bill['apartment_number']) ?> (<?= sanitize(ucfirst($bill['apartment_type'])) ?>)</span>
         </div>
         <div class="receipt-row" style="border-bottom:none;">
             <span class="label">Bill Type</span>

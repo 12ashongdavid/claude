@@ -1,8 +1,5 @@
 <?php
-// =====================================================
-// Paystack Webhook — auto-records successful charges
-// PK's Luxury Apartments — Apartment Management System
-// =====================================================
+// Paystack calls this endpoint when a charge succeeds, so we can record the payment automatically.
 require_once __DIR__ . '/config/database.php';
 require_once __DIR__ . '/config/paystack_helper.php';
 

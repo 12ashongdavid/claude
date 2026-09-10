@@ -1,8 +1,5 @@
 <?php
-// =====================================================
-// Profile Page
-// PK's Luxury Apartments — Apartment Management System
-// =====================================================
+// Lets the logged-in user view their account details and edit their profile or password.
 require_once __DIR__ . '/config/database.php';
 $pageTitle = 'My Profile';
 requireLogin();
@@ -13,7 +10,7 @@ $user = currentUser();
 // Get tenancy info for tenants
 $tenancy = null;
 if ($user['role'] === 'tenant') {
-    $stmt = $db->prepare("SELECT t.*, r.room_number, r.room_type FROM tenancies t JOIN rooms r ON t.room_id = r.id WHERE t.tenant_id = ? AND t.status = 'active'");
+    $stmt = $db->prepare("SELECT t.*, r.apartment_number, r.apartment_type FROM tenancies t JOIN apartments r ON t.apartment_id = r.id WHERE t.tenant_id = ? AND t.status = 'active'");
     $stmt->execute([$user['id']]);
     $tenancy = $stmt->fetch();
 }
@@ -29,7 +26,7 @@ include __DIR__ . '/includes/header.php';
 
 <div class="profile-header">
     <div class="profile-pic-wrapper">
-        <img src="<?= SITE_URL ?>/uploads/profiles/<?= $user['profile_picture'] ?>" alt="Profile" id="profilePicPreview" onerror="this.src='https://ui-avatars.com/api/?name=<?= urlencode($user['full_name']) ?>&background=47433E&color=fff&size=100'">
+        <img src="<?= SITE_URL ?>/uploads/profiles/<?= sanitize($user['profile_picture']) ?>" alt="Profile" id="profilePicPreview" onerror="this.src='https://ui-avatars.com/api/?name=<?= urlencode($user['full_name']) ?>&background=47433E&color=fff&size=100'">
     </div>
     <div>
         <h3 style="font-size:1.2rem;color:#fff;"><?= sanitize($user['full_name']) ?></h3>
@@ -44,7 +41,7 @@ include __DIR__ . '/includes/header.php';
         <form id="profileForm" onsubmit="updateProfile(event)" enctype="multipart/form-data">
             <div class="form-group">
                 <label>Full Name *</label>
-                <input type="text" name="full_name" class="form-control" value="<?= sanitize($user['full_name']) ?>" required>
+                <input type="text" name="full_name" class="form-control" pattern="[A-Za-z\s'\-]+" oninput="this.value=this.value.replace(/[0-9]/g,'')" value="<?= sanitize($user['full_name']) ?>" required>
             </div>
             <div class="form-row">
                 <div class="form-group">
@@ -52,8 +49,8 @@ include __DIR__ . '/includes/header.php';
                     <input type="tel" name="phone" class="form-control" value="<?= sanitize($user['phone']) ?>" pattern="[0-9]{10}" maxlength="10" oninput="this.value=this.value.replace(/[^0-9]/g,'')" required>
                 </div>
                 <div class="form-group">
-                    <label>Email</label>
-                    <input type="email" name="email" class="form-control" value="<?= sanitize($user['email'] ?? '') ?>">
+                    <label>Email *</label>
+                    <input type="email" name="email" class="form-control" placeholder="e.g. name@example.com" pattern="[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}" value="<?= sanitize($user['email'] ?? '') ?>" required>
                 </div>
             </div>
             <div class="form-group">
@@ -118,7 +115,7 @@ include __DIR__ . '/includes/header.php';
         <div class="card">
             <div class="card-header"><h3>Current Tenancy</h3></div>
             <div style="display:flex;flex-direction:column;gap:10px;font-size:0.9rem;">
-                <div><strong>Room:</strong> <?= sanitize($tenancy['room_number']) ?> (<?= ucfirst($tenancy['room_type']) ?>)</div>
+                <div><strong>Apartment:</strong> <?= sanitize($tenancy['apartment_number']) ?> (<?= ucfirst($tenancy['apartment_type']) ?>)</div>
                 <div><strong>Monthly Rent:</strong> <?= formatCurrency($tenancy['monthly_rent']) ?></div>
                 <div><strong>Start:</strong> <?= date('M j, Y', strtotime($tenancy['start_date'])) ?></div>
                 <div><strong>End:</strong> <?= $tenancy['end_date'] ? date('M j, Y', strtotime($tenancy['end_date'])) : 'N/A' ?></div>

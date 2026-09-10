@@ -1,8 +1,5 @@
 <?php
-// =====================================================
-// Paystack Helper — shared by api/paystack.php and webhook
-// PK's Luxury Apartments — Apartment Management System
-// =====================================================
+// Paystack API calls and payment recording, shared by api/paystack.php and the webhook.
 
 // Low-level Paystack API call (best-effort cURL)
 function paystackApiCall($method, $endpoint, $payload = null) {
@@ -37,7 +34,7 @@ function paystackVerify($reference) {
 }
 
 // Map a Paystack channel to the AMS payment_method value
-// (records the actual medium the tenant used — Momo, Bank, Card, etc.)
+// (records the actual medium the tenant used - Momo, Bank, Card, etc.)
 function paystackMethodFromChannel($channel) {
     $c = strtolower((string)$channel);
     if (in_array($c, ['mobile_money', 'momo', 'mobilemoney', 'mtn_mobile_money', 'vodafone_cash', 'airteltigo_money'])) {
@@ -90,7 +87,7 @@ function paystackRecordPayment($reference) {
         $month = preg_match('/^\d{4}-\d{2}$/', (string)($meta['month_covered'] ?? '')) ? $meta['month_covered'] : date('Y-m');
         $months = max(1, min(12, intval($meta['months'] ?? 1)));
 
-        $stmt = $db->prepare("SELECT room_id FROM tenancies WHERE tenant_id = ? AND status = 'active' ORDER BY id DESC LIMIT 1");
+        $stmt = $db->prepare("SELECT apartment_id FROM tenancies WHERE tenant_id = ? AND status = 'active' ORDER BY id DESC LIMIT 1");
         $stmt->execute([$tenantId]);
         $ten = $stmt->fetch();
         if (!$ten) {
@@ -103,7 +100,7 @@ function paystackRecordPayment($reference) {
         $existing->execute([$tenantId]);
         $coveredSet = array_flip($existing->fetchAll(PDO::FETCH_COLUMN));
         $perMonth = round($amount / $months, 2);
-        $stmtIns = $db->prepare("INSERT INTO rent_payments (tenant_id, room_id, amount, payment_date, payment_method, reference_number, month_covered, status, notes) VALUES (?, ?, ?, ?, ?, ?, ?, 'completed', 'Auto-recorded via Paystack')");
+        $stmtIns = $db->prepare("INSERT INTO rent_payments (tenant_id, apartment_id, amount, payment_date, payment_method, reference_number, month_covered, status, notes) VALUES (?, ?, ?, ?, ?, ?, ?, 'completed', 'Auto-recorded via Paystack')");
         $endMonth = $month;
         $lastPaymentId = 0;
         for ($i = 0; $i < $months; $i++) {
@@ -111,7 +108,7 @@ function paystackRecordPayment($reference) {
             if (isset($coveredSet[$m])) {
                 return ['status' => 'duplicate', 'kind' => 'rent'];
             }
-            $stmtIns->execute([$tenantId, $ten['room_id'], $perMonth, $paidAt, $method, $reference, $m]);
+            $stmtIns->execute([$tenantId, $ten['apartment_id'], $perMonth, $paidAt, $method, $reference, $m]);
             $lastPaymentId = (int)$db->lastInsertId();
             $endMonth = $m;
             $coveredSet[$m] = true;
@@ -120,7 +117,9 @@ function paystackRecordPayment($reference) {
         $stmt = $db->prepare("INSERT INTO paystack_transactions (reference, pay_type, tenant_id, amount, month_covered) VALUES (?, 'rent', ?, ?, ?)");
         $stmt->execute([$reference, $tenantId, $amount, $month]);
 
-        $monthLabel = $months > 1 ? $month . ' to ' . $endMonth . ' (' . $months . ' months)' : $month;
+        $monthLabel = $months > 1
+            ? date('F Y', strtotime($month . '-01')) . ' to ' . date('F Y', strtotime($endMonth . '-01')) . ' (' . $months . ' months)'
+            : date('F Y', strtotime($month . '-01'));
 
         $stmt = $db->prepare("SELECT full_name, phone FROM users WHERE id = ?");
         $stmt->execute([$tenantId]);
@@ -152,13 +151,14 @@ function paystackRecordPayment($reference) {
         $stmt = $db->prepare("INSERT INTO paystack_transactions (reference, pay_type, tenant_id, amount, bill_id) VALUES (?, 'utility', ?, ?, ?)");
         $stmt->execute([$reference, $tenantId, $amount, $billId]);
 
+        $billMonthLabel = date('F Y', strtotime($bill['billing_month'] . '-01'));
         $stmt = $db->prepare("SELECT full_name, phone FROM users WHERE id = ?");
         $stmt->execute([$tenantId]);
         $tenant = $stmt->fetch();
         if ($tenant) {
             $stmt = $db->prepare("INSERT INTO notifications (user_id, title, message, type) VALUES (?, 'Utility Bill Paid', ?, 'utility')");
-            $stmt->execute([$tenantId, "Your " . $bill['bill_type'] . " bill of " . formatCurrency($amount) . " for " . $bill['billing_month'] . " has been paid via $methodLabel. Ref: $reference"]);
-            sendSMS($tenant['phone'], "Dear " . $tenant['full_name'] . ", your " . $bill['bill_type'] . " bill of GH₵ " . number_format($amount, 2) . " for " . $bill['billing_month'] . " has been paid via $methodLabel. Ref: $reference. Thank you!");
+            $stmt->execute([$tenantId, "Your " . $bill['bill_type'] . " bill of " . formatCurrency($amount) . " for $billMonthLabel has been paid via $methodLabel. Ref: $reference"]);
+            sendSMS($tenant['phone'], "Dear " . $tenant['full_name'] . ", your " . $bill['bill_type'] . " bill of GH₵ " . number_format($amount, 2) . " for $billMonthLabel has been paid via $methodLabel. Ref: $reference. Thank you!");
         }
 
         return ['status' => 'recorded', 'kind' => 'utility', 'id' => $billId];
@@ -171,6 +171,9 @@ function paystackRecordPayment($reference) {
         $booking = $stmt->fetch();
         if (!$booking) {
             return ['status' => 'failed', 'message' => 'Booking request not found.'];
+        }
+        if ($booking['payment_status'] === 'completed') {
+            return ['status' => 'duplicate', 'kind' => 'booking'];
         }
 
         $stmt = $db->prepare("UPDATE booking_requests SET payment_status = 'completed', payment_reference = ? WHERE id = ?");

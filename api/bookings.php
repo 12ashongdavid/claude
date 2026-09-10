@@ -1,7 +1,5 @@
 <?php
-// =====================================================
-// API: Bookings (Prospective Tenants) — with payment support
-// =====================================================
+// Handles booking requests from prospective tenants, including the optional deposit payment.
 ob_start();
 require_once __DIR__ . '/../config/database.php';
 
@@ -21,22 +19,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $full_name = trim($_POST['full_name'] ?? '');
         $email = trim($_POST['email'] ?? '');
         $phone = trim($_POST['phone'] ?? '');
-        $room_id = !empty($_POST['room_id']) ? intval($_POST['room_id']) : null;
-        $preferred_date = $_POST['preferred_date'] ?? null;
+        $apartment_id = !empty($_POST['apartment_id']) ? intval($_POST['apartment_id']) : null;
+        $preferred_date = !empty($_POST['preferred_date']) ? $_POST['preferred_date'] : null;
         $message = trim($_POST['message'] ?? '');
         $payment_type = $_POST['payment_type'] ?? 'none';
         $payment_method = $_POST['payment_method'] ?? 'paystack';
 
-        if (empty($full_name) || empty($phone)) {
-            jsonOut(['error' => 'Name and phone are required.']);
+        if (empty($full_name) || empty($phone) || empty($email)) {
+            jsonOut(['error' => 'Name, phone, and email are required.']);
+            exit;
+        }
+        if (!validateName($full_name)) {
+            jsonOut(['error' => 'Name must contain letters only (no numbers).']);
             exit;
         }
         if (!validatePhone($phone)) {
             jsonOut(['error' => 'Phone number must be exactly 10 digits.']);
             exit;
         }
-        if (!empty($email) && !validateEmail($email)) {
-            jsonOut(['error' => 'Please enter a valid email address.']);
+        $emailCheck = validateEmailDetailed($email);
+        if (!$emailCheck['valid']) {
+            jsonOut(['error' => $emailCheck['message']]);
+            exit;
+        }
+        if ($preferred_date && $preferred_date < date('Y-m-d')) {
+            jsonOut(['error' => "Your preferred view-in date can't be in the past. Please choose today or a later date."]);
             exit;
         }
 
@@ -49,14 +56,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $payment_reference = trim($_POST['payment_reference'] ?? '');
         $payment_status = 'pending';
 
-        if ($payment_type !== 'none' && $room_id) {
-            $room = $db->prepare("SELECT rental_price FROM rooms WHERE id = ?");
-            $room->execute([$room_id]);
-            $roomData = $room->fetch();
-            if ($roomData) {
+        if ($payment_type !== 'none' && $apartment_id) {
+            $apartment = $db->prepare("SELECT rental_price FROM apartments WHERE id = ?");
+            $apartment->execute([$apartment_id]);
+            $apartmentData = $apartment->fetch();
+            if ($apartmentData) {
                 $payment_amount = $payment_type === 'down_payment'
-                    ? round(floatval($roomData['rental_price']) * 0.5, 2)
-                    : round(floatval($roomData['rental_price']), 2);
+                    ? round(floatval($apartmentData['rental_price']) * 0.5, 2)
+                    : round(floatval($apartmentData['rental_price']), 2);
             }
         }
 
@@ -75,29 +82,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         try {
-            $stmt = $db->prepare("INSERT INTO booking_requests (full_name, email, phone, room_id, preferred_date, message, payment_type, payment_amount, payment_method, payment_reference, payment_status, verification_code) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-            $stmt->execute([$full_name, $email, $phone, $room_id, $preferred_date, $message, $payment_type, $payment_amount, $payment_method, $payment_reference, $payment_status, $verification_code]);
-        } catch (PDOException $e) {
-            $stmt = $db->prepare("INSERT INTO booking_requests (full_name, email, phone, room_id, preferred_date, message, payment_type, payment_amount, payment_method, payment_reference, payment_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-            $stmt->execute([$full_name, $email, $phone, $room_id, $preferred_date, $message, $payment_type, $payment_amount, $payment_method, $payment_reference, $payment_status]);
-            $newId = $db->lastInsertId();
-            if ($verification_code) {
-                try { $db->prepare("UPDATE booking_requests SET verification_code = ? WHERE id = ?")->execute([$verification_code, $newId]); } catch (PDOException $e2) {}
+            try {
+                $stmt = $db->prepare("INSERT INTO booking_requests (full_name, email, phone, apartment_id, preferred_date, message, payment_type, payment_amount, payment_method, payment_reference, payment_status, verification_code) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                $stmt->execute([$full_name, $email, $phone, $apartment_id, $preferred_date, $message, $payment_type, $payment_amount, $payment_method, $payment_reference, $payment_status, $verification_code]);
+            } catch (PDOException $e) {
+                // verification_code column may not exist yet on an un-migrated database
+                $stmt = $db->prepare("INSERT INTO booking_requests (full_name, email, phone, apartment_id, preferred_date, message, payment_type, payment_amount, payment_method, payment_reference, payment_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                $stmt->execute([$full_name, $email, $phone, $apartment_id, $preferred_date, $message, $payment_type, $payment_amount, $payment_method, $payment_reference, $payment_status]);
+                $newId = $db->lastInsertId();
+                if ($verification_code) {
+                    try { $db->prepare("UPDATE booking_requests SET verification_code = ? WHERE id = ?")->execute([$verification_code, $newId]); } catch (PDOException $e2) {}
+                }
             }
+        } catch (PDOException $e3) {
+            jsonOut(['error' => 'We could not submit your booking right now. Please try again in a moment.']);
+            exit;
         }
         $bookingId = $db->lastInsertId();
 
-        // Mark residence as occupied when a booking with payment is made
-        if ($payment_type !== 'none' && $room_id) {
-            $db->prepare("UPDATE rooms SET status = 'occupied' WHERE id = ? AND status = 'available'")->execute([$room_id]);
+        // Mark apartment as occupied when a booking with payment is made
+        if ($payment_type !== 'none' && $apartment_id) {
+            $db->prepare("UPDATE apartments SET status = 'occupied' WHERE id = ? AND status = 'available'")->execute([$apartment_id]);
         }
 
-        // Notify admins (batch insert) — code in notification only, NOT in admin SMS
+        // Notify admins (batch insert) - code in notification only, NOT in admin SMS
         $admins = $db->query("SELECT id, phone FROM users WHERE role = 'admin'")->fetchAll();
-        $room_label = $room_id ? " for Residence #" . $room_id : "";
+        $apartment_label = $apartment_id ? " for Apartment #" . $apartment_id : "";
         $payment_note = $payment_type !== 'none' ? " Payment: " . formatCurrency($payment_amount) . " ($payment_type)." : "";
         $code_line = $verification_code ? " Verification code: $verification_code" : "";
-        $notifMsg = "$full_name has submitted a booking request$room_label.$payment_note$code_line";
+        $notifMsg = "$full_name has submitted a booking request$apartment_label.$payment_note$code_line";
         if ($admins) {
             $placeholders = implode(',', array_fill(0, count($admins), '(?, ?, ?, ?)'));
             $notifSql = "INSERT INTO notifications (user_id, title, message, type) VALUES $placeholders";
@@ -136,10 +149,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $paystack_error = ($res['message'] ?? null) ?: 'Payment service is temporarily unavailable.';
             }
         } elseif ($payment_type !== 'none' && $payment_amount <= 0) {
-            $paystack_error = 'Please select a residence before making a deposit payment.';
+            $paystack_error = 'Please select an apartment before making a deposit payment.';
         }
 
-        // Send response IMMEDIATELY — SMS after response so client is never blocked
+        // Send response IMMEDIATELY - SMS after response so client is never blocked
         jsonOut([
             'success' => true,
             'booking_id' => $bookingId,
@@ -164,7 +177,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         sendSMS($phone, $booker_sms);
         if ($admins) {
-            sendSMS($admins[0]['phone'], "New booking from $full_name$room_label. Phone: $phone$payment_note");
+            sendSMS($admins[0]['phone'], "New booking from $full_name$apartment_label. Phone: $phone." . $payment_note);
         }
         exit;
     }
@@ -181,17 +194,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt = $db->prepare("UPDATE booking_requests SET status = ? WHERE id = ?");
         $stmt->execute([$status, $id]);
 
-        // If rejected and room was reserved by payment, free it back to available
-        if ($status === 'rejected' && $booking && $booking['payment_type'] !== 'none' && $booking['room_id']) {
-            $db->prepare("UPDATE rooms SET status = 'available' WHERE id = ? AND status = 'occupied'")->execute([$booking['room_id']]);
+        // If rejected and apartment was reserved by payment, free it back to available
+        if ($status === 'rejected' && $booking && $booking['payment_type'] !== 'none' && $booking['apartment_id']) {
+            $db->prepare("UPDATE apartments SET status = 'available' WHERE id = ? AND status = 'occupied'")->execute([$booking['apartment_id']]);
         }
 
         // If approved with payment, auto-create tenant account
-        if ($status === 'approved' && $booking && $booking['payment_type'] !== 'none' && $booking['room_id']) {
+        if ($status === 'approved' && $booking && $booking['payment_type'] !== 'none' && $booking['apartment_id']) {
             $booking_full_name = $booking['full_name'];
             $booking_email = $booking['email'] ?? '';
             $booking_phone = $booking['phone'];
-            $booking_room_id = $booking['room_id'];
+            $booking_apartment_id = $booking['apartment_id'];
             $booking_payment_amount = floatval($booking['payment_amount']);
             $booking_payment_method = $booking['payment_method'] ?: 'mobile_money';
             $booking_payment_reference = $booking['payment_reference'] ?? '';
@@ -220,26 +233,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $stmt->execute([$username, $hashed, $booking_full_name, $booking_email, $booking_phone]);
                 $tenant_id = $db->lastInsertId();
 
-                // Get room rental price for tenancy
-                $roomStmt = $db->prepare("SELECT rental_price FROM rooms WHERE id = ?");
-                $roomStmt->execute([$booking_room_id]);
-                $rental_price = floatval($roomStmt->fetchColumn() ?: 0);
+                // Get apartment rental price for tenancy
+                $apartmentStmt = $db->prepare("SELECT rental_price FROM apartments WHERE id = ?");
+                $apartmentStmt->execute([$booking_apartment_id]);
+                $rental_price = floatval($apartmentStmt->fetchColumn() ?: 0);
 
                 // Create tenancy
                 $start_date = date('Y-m-d');
                 $end_date = date('Y-m-d', strtotime($start_date . '+1 year'));
-                $stmt = $db->prepare("INSERT INTO tenancies (tenant_id, room_id, start_date, end_date, monthly_rent, status) VALUES (?, ?, ?, ?, ?, 'active')");
-                $stmt->execute([$tenant_id, $booking_room_id, $start_date, $end_date, $rental_price]);
+                $stmt = $db->prepare("INSERT INTO tenancies (tenant_id, apartment_id, start_date, end_date, monthly_rent, status) VALUES (?, ?, ?, ?, ?, 'active')");
+                $stmt->execute([$tenant_id, $booking_apartment_id, $start_date, $end_date, $rental_price]);
 
-                // Mark room occupied
-                $db->prepare("UPDATE rooms SET status = 'occupied' WHERE id = ?")->execute([$booking_room_id]);
+                // Mark apartment occupied
+                $db->prepare("UPDATE apartments SET status = 'occupied' WHERE id = ?")->execute([$booking_apartment_id]);
 
                 // Record deposit as first rent payment (deducted from rent)
                 if ($booking_payment_amount > 0) {
                     $ref = $booking_payment_reference ?: generateRef('RNT');
                     $month_covered = date('Y-m');
-                    $stmt = $db->prepare("INSERT INTO rent_payments (tenant_id, room_id, amount, payment_date, payment_method, reference_number, month_covered, status, notes) VALUES (?, ?, ?, ?, ?, ?, ?, 'completed', 'Deposit from booking')");
-                    $stmt->execute([$tenant_id, $booking_room_id, $booking_payment_amount, date('Y-m-d'), $booking_payment_method, $ref, $month_covered]);
+                    $stmt = $db->prepare("INSERT INTO rent_payments (tenant_id, apartment_id, amount, payment_date, payment_method, reference_number, month_covered, status, notes) VALUES (?, ?, ?, ?, ?, ?, ?, 'completed', 'Deposit from booking')");
+                    $stmt->execute([$tenant_id, $booking_apartment_id, $booking_payment_amount, date('Y-m-d'), $booking_payment_method, $ref, $month_covered]);
                 }
 
                 // Send SMS with credentials
@@ -269,7 +282,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $id = intval($_POST['id'] ?? 0);
         $code = trim($_POST['verification_code'] ?? '');
-        $reference = trim($_POST['payment_reference'] ?? 'ADMIN-' . strtoupper(bin2hex(random_bytes(4))));
+        $refInput = trim($_POST['payment_reference'] ?? '');
+        $reference = $refInput !== '' ? $refInput : 'ADMIN-' . strtoupper(bin2hex(random_bytes(4)));
 
         if (empty($code)) {
             jsonOut(['error' => 'Please enter the verification code from the booker.']);
@@ -294,6 +308,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt = $db->prepare("UPDATE booking_requests SET payment_status = 'completed', payment_reference = ? WHERE id = ?");
         $stmt->execute([$reference, $id]);
 
+        $stmt = $db->prepare("SELECT full_name, phone FROM booking_requests WHERE id = ?");
+        $stmt->execute([$id]);
+        $req = $stmt->fetch();
+        if ($req) {
+            sendSMS($req['phone'], "Dear " . $req['full_name'] . ", your booking payment has been confirmed. Thank you for choosing PK's Luxury Apartments.");
+        }
+
         jsonOut(['success' => true]);
         exit;
     }
@@ -310,6 +331,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt = $db->prepare("UPDATE booking_requests SET payment_status = 'failed' WHERE id = ?");
         $stmt->execute([$id]);
 
+        $stmt = $db->prepare("SELECT full_name, phone FROM booking_requests WHERE id = ?");
+        $stmt->execute([$id]);
+        $req = $stmt->fetch();
+        if ($req) {
+            sendSMS($req['phone'], "Dear " . $req['full_name'] . ", we could not confirm your booking payment. Please contact PK's Luxury Apartments for assistance.");
+        }
+
         jsonOut(['success' => true]);
         exit;
     }
@@ -324,7 +352,7 @@ if (!in_array(currentUser()['role'], ['admin', 'staff'])) {
 }
 
 $status_filter = $_GET['status'] ?? '';
-$sql = "SELECT br.*, r.room_number FROM booking_requests br LEFT JOIN rooms r ON br.room_id = r.id WHERE 1=1";
+$sql = "SELECT br.*, r.apartment_number FROM booking_requests br LEFT JOIN apartments r ON br.apartment_id = r.id WHERE 1=1";
 $params = [];
 
 if ($status_filter) {

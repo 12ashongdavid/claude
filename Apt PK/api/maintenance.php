@@ -1,7 +1,5 @@
 <?php
-// =====================================================
-// API: Maintenance Requests
-// =====================================================
+// Handles tenant maintenance requests - submission, admin/staff assignment, and status updates.
 require_once __DIR__ . '/../config/database.php';
 requireLogin();
 
@@ -19,19 +17,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if ($action === 'submit') {
         // Tenant submits request
-        $room_id = intval($_POST['room_id'] ?? 0);
+        $apartment_id = intval($_POST['apartment_id'] ?? 0);
         $category = $_POST['category'] ?? 'other';
         $subject = trim($_POST['subject'] ?? '');
         $description = trim($_POST['description'] ?? '');
         $priority = $_POST['priority'] ?? 'medium';
 
-        if (!$room_id || empty($subject) || empty($description)) {
+        $allowedCategories = ['plumbing', 'electrical', 'structural', 'pest_control', 'appliance', 'other'];
+        $allowedPriorities = ['low', 'medium', 'high', 'urgent'];
+        if (!in_array($category, $allowedCategories, true)) {
+            $category = 'other';
+        }
+        if (!in_array($priority, $allowedPriorities, true)) {
+            $priority = 'medium';
+        }
+
+        if (!$apartment_id || empty($subject) || empty($description)) {
             echo json_encode(['error' => 'Please fill in all required fields.']);
             exit;
         }
 
-        $stmt = $db->prepare("INSERT INTO maintenance_requests (tenant_id, room_id, category, subject, description, priority) VALUES (?, ?, ?, ?, ?, ?)");
-        $stmt->execute([$user['id'], $room_id, $category, $subject, $description, $priority]);
+        if ($user['role'] === 'tenant') {
+            $stmt = $db->prepare("SELECT 1 FROM tenancies WHERE tenant_id = ? AND apartment_id = ? AND status = 'active'");
+            $stmt->execute([$user['id'], $apartment_id]);
+            if (!$stmt->fetch()) {
+                echo json_encode(['error' => 'You may only submit requests for your own apartment.']);
+                exit;
+            }
+        }
+
+        $stmt = $db->prepare("INSERT INTO maintenance_requests (tenant_id, apartment_id, category, subject, description, priority) VALUES (?, ?, ?, ?, ?, ?)");
+        $stmt->execute([$user['id'], $apartment_id, $category, $subject, $description, $priority]);
 
         $req_id = $db->lastInsertId();
 
@@ -40,7 +56,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         foreach ($admins as $admin) {
             $stmt = $db->prepare("INSERT INTO notifications (user_id, title, message, type, link) VALUES (?, 'New Maintenance Request', ?, 'maintenance', 'maintenance.php')");
             $stmt->execute([$admin['id'], "Tenant submitted: $subject (Priority: $priority)"]);
-            sendSMS($admin['phone'], "New maintenance request from " . $user['full_name'] . " (Room #$room_id): $subject. Priority: $priority");
+            sendSMS($admin['phone'], "New maintenance request from " . $user['full_name'] . " (Apartment #$apartment_id): $subject. Priority: $priority");
         }
 
         echo json_encode(['success' => true, 'id' => $req_id]);
@@ -59,6 +75,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $assigned_name = trim($_POST['assigned_name'] ?? '');
         $assigned_phone = trim($_POST['assigned_phone'] ?? '');
 
+        if (!empty($assigned_name) && !validateName($assigned_name)) {
+            echo json_encode(['error' => 'Assignee name must contain letters only (no numbers).']);
+            exit;
+        }
         if (!empty($assigned_phone) && !validatePhone($assigned_phone)) {
             echo json_encode(['error' => 'Assignee phone must be exactly 10 digits.']);
             exit;
@@ -111,14 +131,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // GET: List maintenance requests
-$mine = isset($_GET['mine']) && $_GET['mine'] === '1';
 $status_filter = $_GET['status'] ?? '';
 $priority = $_GET['priority'] ?? '';
 
-$sql = "SELECT mr.*, u.full_name as tenant_name, r.room_number FROM maintenance_requests mr JOIN users u ON mr.tenant_id = u.id JOIN rooms r ON mr.room_id = r.id WHERE 1=1";
+$sql = "SELECT mr.*, u.full_name as tenant_name, r.apartment_number FROM maintenance_requests mr JOIN users u ON mr.tenant_id = u.id JOIN apartments r ON mr.apartment_id = r.id WHERE 1=1";
 $params = [];
 
-if ($mine && $user['role'] === 'tenant') {
+if ($user['role'] === 'tenant') {
     $sql .= " AND mr.tenant_id = ?";
     $params[] = $user['id'];
 }

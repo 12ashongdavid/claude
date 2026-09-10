@@ -1,8 +1,5 @@
 <?php
-// =====================================================
-// Includes: Header
-// PK's Luxury Apartments — Apartment Management System
-// =====================================================
+// Shared page chrome: sidebar nav, top bar, and notifications - included at the top of every logged-in page.
 require_once __DIR__ . '/../config/database.php';
 sendSecurityHeaders();
 $user = currentUser();
@@ -19,7 +16,7 @@ if ($user) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= isset($pageTitle) ? sanitize($pageTitle) . ' — ' : '' ?>PK's Luxury Apartments</title>
+    <title><?= isset($pageTitle) ? sanitize($pageTitle) . ' - ' : '' ?>PK's Luxury Apartments</title>
     <meta name="theme-color" content="#1B2A4A">
     <link rel="preconnect" href="https://unpkg.com" crossorigin>
     <link rel="stylesheet" href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css">
@@ -47,8 +44,8 @@ if ($user) {
 
             <?php if ($user && in_array($user['role'], ['admin', 'staff'])): ?>
             <div class="nav-section">Management</div>
-            <a href="rooms.php" class="<?= basename($_SERVER['PHP_SELF']) == 'rooms.php' ? 'active' : '' ?>">
-                <span class="icon"><i class='bx bx-door-open'></i></span> Residence
+            <a href="apartments.php" class="<?= basename($_SERVER['PHP_SELF']) == 'apartments.php' ? 'active' : '' ?>">
+                <span class="icon"><i class='bx bx-door-open'></i></span> Apartments
             </a>
             <a href="tenants.php" class="<?= basename($_SERVER['PHP_SELF']) == 'tenants.php' ? 'active' : '' ?>">
                 <span class="icon"><i class='bx bx-group'></i></span> Tenants
@@ -71,7 +68,7 @@ if ($user) {
                 <span class="icon"><i class='bx bx-bolt-circle'></i></span> Utility Bills
             </a>
 
-            <?php if ($user && in_array($user['role'], ['admin', 'staff'])): ?>
+            <?php if ($user && $user['role'] === 'admin'): ?>
             <div class="nav-section">Analytics</div>
             <a href="reports.php" class="<?= basename($_SERVER['PHP_SELF']) == 'reports.php' ? 'active' : '' ?>">
                 <span class="icon"><i class='bx bx-line-chart'></i></span> Reports
@@ -149,7 +146,7 @@ if ($user) {
                     </div>
                 </div>
                 <div class="topbar-user" onclick="location.href='profile.php'">
-                    <img src="<?= SITE_URL ?>/uploads/profiles/<?= $user['profile_picture'] ?>" alt="Profile" loading="lazy" onerror="this.src='https://ui-avatars.com/api/?name=<?= urlencode($user['full_name']) ?>&background=47433E&color=fff'">
+                    <img src="<?= SITE_URL ?>/uploads/profiles/<?= sanitize($user['profile_picture']) ?>" alt="Profile" loading="lazy" onerror="this.src='https://ui-avatars.com/api/?name=<?= urlencode($user['full_name']) ?>&background=47433E&color=fff'">
                     <span><?= sanitize($user['full_name']) ?></span>
                 </div>
             </div>

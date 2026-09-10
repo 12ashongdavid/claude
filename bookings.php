@@ -1,8 +1,5 @@
 <?php
-// =====================================================
-// Bookings Page (Admin/Staff) — with payment management
-// PK's Luxury Apartments — Apartment Management System
-// =====================================================
+// Admin/staff view of booking requests - approve or reject bookings and confirm their deposit payments.
 require_once __DIR__ . '/config/database.php';
 $pageTitle = 'Booking Requests';
 requireRole(['admin', 'staff']);
@@ -91,7 +88,7 @@ function renderBookings(bookings) {
                     <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:2px;">
                         <i class="bx bx-phone"></i> ${esc(b.phone)} ${b.email ? '&bull; <i class="bx bx-envelope"></i> ' + esc(b.email) : ''}
                     </p>
-                    ${b.room_number ? `<p style="font-size:0.85rem;margin-top:4px;"><strong>Residence:</strong> ${esc(b.room_number)}</p>` : ''}
+                    ${b.apartment_number ? `<p style="font-size:0.85rem;margin-top:4px;"><strong>Apartment:</strong> ${esc(b.apartment_number)}</p>` : ''}
                     ${b.preferred_date ? `<p style="font-size:0.85rem;"><strong>Preferred Date:</strong> ${new Date(b.preferred_date).toLocaleDateString('en-GB',{day:'2-digit',month:'long',year:'numeric'})}</p>` : ''}
                     ${b.message ? `<p style="font-size:0.85rem;margin-top:4px;color:var(--text-secondary);">${esc(b.message)}</p>` : ''}
                     ${hasPayment ? `
